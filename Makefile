@@ -24,7 +24,7 @@ CFLAGS += -I./
 CFLAGS += -O2 -g -Wno-unused-but-set-variable -Wall
 #CFLAGS += -O2 -g -Wcomment -Wformat -Wimplicit -Wreturn-type #-Wunused
 PROJ_DFLAGS := -D_REENTRANT
-PROJ_LIB := -lpthread -ljson-c
+PROJ_LIB := -lpthread -ljson-c -ldaemon
 
 SOURCE := $(wildcard $(SOURCE_DIR)/*.c)
 OBJECTS := $(patsubst %.c,%.o,$(SOURCE))
