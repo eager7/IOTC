@@ -54,12 +54,12 @@ static  void dl_list_del ( struct dl_list *item )
 	item->next = NULL;
 	item->prev = NULL;
 }
-#if 0
+
 static  int dl_list_empty ( struct dl_list *list )
 {
 	return list->next == list;
 }
-#endif
+
 static  unsigned int dl_list_len ( struct dl_list *list )
 {
 	struct dl_list *item;

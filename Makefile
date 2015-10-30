@@ -21,8 +21,8 @@ RM := rm
 
 SOURCE_DIR := .
 CFLAGS += -I./
-CFLAGS += -O2 -g -Wno-unused-but-set-variable -Wall
-#CFLAGS += -O2 -g -Wcomment -Wformat -Wimplicit -Wreturn-type #-Wunused
+#CFLAGS += -O2 -g -Wno-unused-but-set-variable -Wall
+CFLAGS += -O2 -g -Wcomment -Wformat -Wimplicit -Wreturn-type #-Wunused
 PROJ_DFLAGS := -D_REENTRANT
 PROJ_LIB := -lpthread -ljson-c -ldaemon
 

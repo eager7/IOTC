@@ -25,10 +25,13 @@
 #include <libdaemon/daemon.h>
 
 #include "utils.h"
+#include "socket_server.h"
+
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
 #define DBG_MAIN 1
+#define PORT_SOCKET 7788
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
@@ -148,11 +151,19 @@ int main(int argc, char *argv[])
     signal(SIGTERM, vQuitSignalHandler);/* Install signal handlers */
     signal(SIGINT,  vQuitSignalHandler);		
 	
+	if ((SocketServerInit(PORT_SOCKET, NULL) != E_SOCK_OK))
+	{
+		ERR_vPrintf(T_TRUE, "Init compents failed \n");
+		goto finish;
+	}
+
 	while(bRunning)
 	{
-		
-		sleep(0);//dispatch thread
+		//Printf Device List
+		sleep(1);//dispatch thread
 	}
+	
+	SocketServerFinished();
 finish:
     if (daemonize)
         daemon_log(LOG_INFO, "Daemon process exiting");  
@@ -181,6 +192,7 @@ static void vQuitSignalHandler (int sig)
 {
     DBG_vPrintf(DBG_MAIN, "Got signal %d\n", sig); 
     bRunning = 0;
-    exit(0);
+    SocketServerFinished();
+	exit(0);
     return;
 }
