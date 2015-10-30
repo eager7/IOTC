@@ -1,6 +1,6 @@
 ###########################################################################
 #
-# MODULE:             SocketCommunication - Makefile
+# MODULE:             IOTC - Makefile
 #
 # REVISION:           $Revision: 1.0 $
 #
