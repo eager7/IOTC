@@ -25,7 +25,7 @@ git remote add origin https://github.com/eager7/IOTC.git
 git push -u origin master
 
 1. 配置使用默认密码
-	echo "https://eager7:pct1197639@github.com" .git-credentials
+	echo "https://name:passwd@github.com" > .git-credentials
 	git config --global credential.helper store
 
 	可以看到~/.gitconfig文件，会多了一项：
