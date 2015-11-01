@@ -26,8 +26,9 @@ extern "C"{
 /****************************************************************************/
 /***        Include files                                                 ***/
 /****************************************************************************/
+#include <pthread.h>
 #include "utils.h"
-
+#include "list.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
@@ -36,6 +37,15 @@ extern "C"{
 /****************************************************************************/
 /***        Type Definitions                                              ***/
 /****************************************************************************/
+typedef enum
+{
+    E_IOTC_OK,
+    E_IOTC_ERROR,
+    E_IOTC_EXIST,
+    E_IOTC_ERROR_MALLOC,
+}teIotcStatus;
+    
+    
 typedef union
 {
     uint8           u8Data;
@@ -56,14 +66,17 @@ typedef struct _tsDeviceServer
 
 typedef struct _tsIotc_Device
 {
-    char            *cDeviceName[MXBF];
+    pthread_mutex_t mutex;
+    char            cDeviceName[MXBF];
     uint16          u16DeviceID;
+    bool_t          blDeviceOnline;
     
     uint64          u64DeviceIndex;
     
     uint16          u16NumServer;
     tsDeviceServer  *psDeviceServer;
 
+    struct dl_list  list;
 }tsIotcDevice;
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
@@ -79,7 +92,15 @@ extern tsIotcDevice sIotcDeviceHead;
 
 /****************************************************************************/
 /***        Exported Functions                                            ***/
-/****************************************************************************/ 
+/****************************************************************************/
+teIotcStatus IotcDeviceAdd(tsIotcDevice *psIotcDevice);
+teIotcStatus IotcDeviceRemove(tsIotcDevice *psIotcDevice);
+
+teIotcStatus IotcDeviceServerAdd();
+teIotcStatus IotcDeviceAttributeAdd();
+
+
+
 /****************************************************************************/
 /***        Locate   Functions                                            ***/
 /****************************************************************************/
