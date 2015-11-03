@@ -51,6 +51,7 @@ typedef enum
     E_SOCK_ERROR_PTHREAD_CREATE, 
     E_SOCK_ERROR_JOIN, 
     E_SOCK_ERROR_FORMAT, 
+    E_SOCK_NO_MESSAGE,
 }teSocketStatus;
 
 typedef enum
@@ -89,6 +90,8 @@ typedef struct _tSocketServer
 typedef struct _tSocektClient
 {
     int iSocketFd;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond_message_receive;
     struct sockaddr_in addrclient;
     int iSocketLen;
     char csClientData[MXBF];
