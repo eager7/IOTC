@@ -4,7 +4,7 @@
 #
 # REVISION:           $Revision: 1.0 $
 #
-# DATED:              $Date: 2015-10-20 11:16:28 +0000 $
+# DATED:              $Date: 2015-10-28 11:16:28 +0000 $
 #
 # AUTHOR:             PCT
 #
@@ -13,40 +13,56 @@
 # Copyright panchangtao@gmail.com B.V. 2015. All rights reserved
 #
 ###########################################################################
+TARGET := iotc_daemon
 
-TARGET := iot_control_daemon
+SRC_NAME := .
+SRC_DIR := $(SRC_NAME)/source
+INC_DIR := $(SRC_NAME)/include
+
+
+SOURCE := $(wildcard $(SRC_DIR)/*.c)
+INCLUD := $(wildcard $(INC_DIR)/*.h)
+
+CFLAGS := -I./include/
+CFLAGS += -I$(SRC_NAME)/include/
+PROJ_DFLAGS := -D_REENTRANT
+PROJ_LIBS := -L./lib
+PROJ_LIBS += -ldaemon -lpthread -ljson-c -lsqlite3
 
 CC := gcc
-RM := rm
-
-SOURCE_DIR := .
-CFLAGS += -I./
+RM := -rm
 #CFLAGS += -O2 -g -Wno-unused-but-set-variable -Wall
-CFLAGS += -O2 -g -Wcomment -Wformat -Wimplicit -Wreturn-type #-Wunused
-PROJ_DFLAGS := -D_REENTRANT
-PROJ_LIB := -lpthread -ljson-c -ldaemon
+CFLAGS += -O2 -g -Wcomment -Wformat -Wimplicit -Wreturn-type
 
-SOURCE := $(wildcard $(SOURCE_DIR)/*.c)
-OBJECTS := $(patsubst %.c,%.o,$(SOURCE))
-OBJECTD := $(patsubst %.c,%.d,$(SOURCE))
 
-.PHONY: all clean
 
+OBJS := $(patsubst %.c,%.o,$(SOURCE))
+INCLUDE := $(patsubst %.c,%.h,$(INCLUD))
+
+vpath %.c $(SRC_DIR)
+
+.PHONY: all clean distclean
 all: $(TARGET)
-
-$(TARGET):$(OBJECTS)
-	$(CC) $(PROJ_DFLAGS) $^ $(CFLAGS) $(PROJ_LIB) -o $@
 	
--include $(SOURCE:.c=.d)
+include $($(SOURCE):.c=.d)
+	
+$(TARGET):$(OBJS)
+	@$(CC) $(PROJ_DFLAGS) $^ $(PROJ_CFLAGS) $(CFLAGS) $(PROJ_LIBS) -o $@ 
+	
+%.o:%.c $(INCLUDE) 
+	$(CC)  -I. $(CFLAGS) $(PROJ_CFLAGS) -c $< -o $@
 
-%d:%c
-	@set -e;$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
-	sed 's/.o:/.o $@:/g' < $@.$$$$ > $@; \
-	$(RM) $@.$$$$
-
-%.o:%.c
-	$(CC)  -I. $(CFLAGS) -c $< -o $@
+	
+test:
+	@echo $(SOURCE)
+	@echo $(CC)
+	@echo $(OBJS)
 	
 clean:
-	$(RM) $(TARGET) $(OBJECTS) *.d*
-	
+	$(RM) $(TARGET) $(OBJS)
+
+distclean:
+	$(RM) $(TARGET) $(OBJS)
+ 
+
+
