@@ -127,7 +127,7 @@ teSocketStatus SocketServerSendMessage(teSocketHandle eSocketHandle, int iSocket
 {
     BLUE_vPrintf(DBG_SOCK, "SocketServerSendMessage %s\n", psMessage);
 
-    json_object *psJsonMessage = json_object_new_object();
+    struct json_object *psJsonMessage = json_object_new_object();
     if(NULL == psJsonMessage)
     {
         ERR_vPrintf(T_TRUE, "json_object_objece_new error\n");
@@ -147,7 +147,7 @@ teSocketStatus SocketServerSendMessage(teSocketHandle eSocketHandle, int iSocket
     return E_SOCK_OK;
 }
 
-teSocketStatus SocketServerSendJsonMessage(int iSocketFd, json_object *psJsonMessage)
+teSocketStatus SocketServerSendJsonMessage(int iSocketFd, struct json_object *psJsonMessage)
 {
     BLUE_vPrintf(DBG_SOCK, "SocketServerSendJsonMessage %s\n", json_object_get_string(psJsonMessage));
     
@@ -363,3 +363,10 @@ static teSocketStatus SocketServerHandleRecvMessage(int iSocketFd, char *psRecvM
     return E_SOCK_OK;
 }
 
+teSocketStatus SocektServerSendMessage(int iClientFd, uint16 u16Type, uint16 u16Length, void *psMessage, uint16 *pu16SquenceNo)
+{
+    DBG_vPrintf(DBG_SOCK, "SocketServerHandleRecvMessage\n");
+    
+    
+    return E_SOCK_OK;
+}

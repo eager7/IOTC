@@ -94,6 +94,22 @@ typedef struct _tSocektClient
     char csClientData[MXBF];
     struct dl_list list;
 }tsSocketClient;
+
+///////////////////////////////////MessageQueue//////////////////////////////
+typedef struct
+{
+    void **apvBuffer;
+    uint32 u32Capacity;
+    uint32 u32Size;
+    uint32 u32In;
+    uint32 u32Out;
+    
+    pthread_mutex_t mutex;
+    pthread_cond_t cond_space_available;
+    pthread_cond_t cond_data_available;
+} tsQueue;
+
+
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
@@ -111,6 +127,8 @@ typedef struct _tSocektClient
 /****************************************************************************/
 teSocketStatus SocketServerInit(int iPort, char *psNetAddress);
 teSocketStatus SocketServerFinished();
+teSocketStatus SocektServerSendMessage(int iClientFd, uint16 u16Type, uint16 u16Length, void *psMessage, uint16 *pu16SquenceNo);
+teSocketStatus SocketServerWaitMessage(uint16 u16Type, uint32 u32WaitTimeout, uint16 *pu16Length, void **ppvMessage);
 
 
 #if defined __cplusplus
