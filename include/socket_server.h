@@ -44,6 +44,7 @@ typedef enum
 {
     E_SOCK_OK = 0,
     E_SOCK_ERROR,
+    E_SOCK_INVALID_PARAMETER,
     E_SOCK_ERROR_CREATESOCK,
     E_SOCK_ERROR_SETSOCK,
     E_SOCK_ERROR_BIND,
@@ -61,19 +62,30 @@ typedef enum
     E_EPOLL_ERROR = -1,
 }teSelectResult;
 
-typedef enum
-{
-    E_HANDLE_OK,
-    E_HANDLE_ERROR,
-   
-}teSocketHandle;
-
 typedef volatile enum
 {
     E_THREAD_STOPPED,   /**< Thread stopped */
     E_THREAD_RUNNING,   /**< Thread running */
     E_THREAD_STOPPING,  /**< Thread signaled to stop */
 } teState;               /**< Enumerated type of thread states */
+
+
+typedef void (*tprSock_MessageCallback)(void *pvUser, uint16 u16Length, void *pvMessage);
+
+/** Linked list structure for a callback function entry */
+typedef struct _tsSock_CallbackEntry
+{
+    uint16                u16Type;        /**< Message type for this callback */
+    tprSock_MessageCallback   prCallback;     /**< User supplied callback function for this message type */
+    void                    *pvUser;        /**< User supplied data for the callback function */
+    struct _tsSock_CallbackEntry *psNext;     /**< Pointer to next in linked list */
+} tsSock_CallbackEntry;
+
+typedef struct
+{
+    pthread_mutex_t         mutex;
+    tsSock_CallbackEntry    *psListHead;
+} tsCallbacks;
 
 typedef struct _tSocketServer
 {
@@ -85,33 +97,21 @@ typedef struct _tSocketServer
     
     uint8 u8NumConnClient;
     char *psNetAddress;
+
+    tsCallbacks sCallbacks;
 }tsSocketServer;
 
 typedef struct _tSocektClient
 {
     int iSocketFd;
     pthread_mutex_t mutex;
+    pthread_mutex_t mutex_cond;
     pthread_cond_t cond_message_receive;
     struct sockaddr_in addrclient;
-    int iSocketLen;
+    int iSocketDataLen;
     char csClientData[MXBF];
     struct dl_list list;
 }tsSocketClient;
-
-///////////////////////////////////MessageQueue//////////////////////////////
-typedef struct
-{
-    void **apvBuffer;
-    uint32 u32Capacity;
-    uint32 u32Size;
-    uint32 u32In;
-    uint32 u32Out;
-    
-    pthread_mutex_t mutex;
-    pthread_cond_t cond_space_available;
-    pthread_cond_t cond_data_available;
-} tsQueue;
-
 
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
