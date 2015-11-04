@@ -196,8 +196,8 @@ teSocketStatus SocketCallBackListenerAdd(uint16 u16MessageType, tprSocketMessage
 /****************************************************************************/
 static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress)
 {
-	struct sockaddr_in server_addr;  
-	server_addr.sin_family = AF_INET;  
+    struct sockaddr_in server_addr;  
+    server_addr.sin_family = AF_INET;  
     if(NULL != psNetAddress)
     {
         server_addr.sin_addr.s_addr = inet_addr(psNetAddress);  /*just receive one address*/
@@ -206,7 +206,7 @@ static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress)
     {
         server_addr.sin_addr.s_addr = htonl(INADDR_ANY);        /*receive any address*/
     }
-	server_addr.sin_port = htons(iPort);
+    server_addr.sin_port = htons(iPort);
 
     if(-1 == (sSocketServer.iSocketFd = socket(AF_INET, SOCK_STREAM, 0)))
     {
@@ -262,6 +262,88 @@ static void SocketClientListFree()
         free(psSocketClientTemp1);
         psSocketClientTemp1 = NULL;
     }
+}
+
+tsSocketClient* SocketClientNew()
+{
+    tsSocketClient *psSocketClientNew = (tsSocketClient *)malloc(sizeof(tsSocketClient));
+    if(NULL == psSocketClientNew)
+    {
+        ERR_vPrintf(T_TRUE,"malloc failed, %s\n", strerror(errno));                                         
+        exit(1);
+    }
+    memset(psSocketClientNew, 0, sizeof(tsSocketClient));
+    pthread_mutex_init(&psSocketClientNew->mutex, NULL);
+    pthread_mutex_init(&psSocketClientNew->mutex_cond, NULL);
+    pthread_cond_init(&psSocketClientNew->cond_message_receive, NULL);
+    dl_list_add_tail(&sSocketClientHead.list, &psSocketClientNew->list);
+    return psSocketClientNew;
+}
+
+static void SocketClientDestory(tsSocketClient *psSocketClient)
+{
+    close(psSocketClient->iSocketFd);
+    dl_list_del(&psSocketClient->list);
+    pthread_mutex_destroy(&psSocketClient->mutex);
+    pthread_mutex_destroy(&psSocketClient->mutex_cond);
+    pthread_cond_destroy(&psSocketClient->cond_message_receive);
+    free(psSocketClient);
+}
+
+static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClient)
+{
+    BLUE_vPrintf(DBG_SOCK, "SocketServerHandleRecvMessage\n");
+    
+    uint16 u16MessageType = 0;
+    json_object *psJsonRecvMessage = NULL, *psJsonTemp = NULL;
+    if (NULL != (psJsonRecvMessage = json_tokener_parse(psSocketClient->csClientData)))
+    {
+        if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paSequenceNo)))
+        {
+            if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paMessageType)))
+            {
+                u16MessageType = json_object_get_int(psJsonTemp);
+            }
+            else
+            {
+                ERR_vPrintf(T_TRUE, "Json Format Error\n");
+                json_object_put(psJsonRecvMessage);
+                return E_SOCK_ERROR_FORMAT;
+            }
+        }
+        else
+        {
+            ERR_vPrintf(T_TRUE, "Json Format Error\n");
+            json_object_put(psJsonRecvMessage);
+            return E_SOCK_ERROR_FORMAT;
+        }
+    }
+    else
+    {
+        ERR_vPrintf(T_TRUE, "Json Format Error\n");
+        return E_SOCK_ERROR_FORMAT;
+    }
+
+    uint8 u8Handle = 0;
+    tsSocketCallbackEntry *psSocketCallbackEntryTemp = NULL;
+    dl_list_for_each(psSocketCallbackEntryTemp, &sSocketServer.sSocketCallbacks.sCallListHead.list, tsSocketCallbackEntry, list)
+    {
+        if (psSocketCallbackEntryTemp->u16Type == u16MessageType)
+        {
+            if (NULL != psSocketCallbackEntryTemp->prCallback)
+            {                                           
+                psSocketCallbackEntryTemp->prCallback(psJsonRecvMessage, psSocketClient->iSocketDataLen); 
+                u8Handle = 1;
+            }
+        }
+    }
+    if (0 == u8Handle)
+    {
+        pthread_cond_broadcast(&psSocketClient->cond_message_receive); 
+        json_object_put(psJsonRecvMessage);
+    }
+    
+    return E_SOCK_OK;
 }
 
 static void ThreadSignalHandler(int sig)
@@ -321,28 +403,17 @@ static void *SocketServerHandleThread(void *arg)
                     {
                         DBG_vPrintf(DBG_SOCK, "sSocketServer.iSocketFd Changed\n");
                         
-                        tsSocketClient *psSocketClientNew = (tsSocketClient *)malloc(sizeof(tsSocketClient));
-                        if(NULL == psSocketClientNew)
-                        {
-                            ERR_vPrintf(T_TRUE,"malloc failed, %s\n", strerror(errno));                                         
-                            goto done;
-                        }
-                        memset(psSocketClientNew, 0, sizeof(tsSocketClient));
-                        
+                        tsSocketClient *psSocketClientNew = SocketClientNew();
                         int Len = sizeof(psSocketClientNew->addrclient);
                         psSocketClientNew->iSocketFd = accept(sSocketServer.iSocketFd,
                                 (struct sockaddr*)&psSocketClientNew->addrclient, (socklen_t *)&Len);
                         if(-1 == psSocketClientNew->iSocketFd)
                         {
                             ERR_vPrintf(T_TRUE, "socket accept error %s\n", strerror(errno));
-                            free(psSocketClientNew);
+                            SocketClientDestory(psSocketClientNew);
                         }
                         else
                         {
-                            pthread_mutex_init(&psSocketClientNew->mutex, NULL);
-                            pthread_mutex_init(&psSocketClientNew->mutex_cond, NULL);
-                            pthread_cond_init(&psSocketClientNew->cond_message_receive, NULL);
-                            dl_list_add_tail(&sSocketClientHead.list, &psSocketClientNew->list);
                             YELLOW_vPrintf(DBG_SOCK, "A client[%d] Already Connected, The Number of Client is [%d]\n", 
                                                                 psSocketClientNew->iSocketFd, dl_list_len(&sSocketClientHead.list));
                             
@@ -394,68 +465,14 @@ static void *SocketServerHandleThread(void *arg)
                                     }
 
                                     /*disconnect this socket client*/
-                                    close(psSocketClientTemp1->iSocketFd);
-                                    dl_list_del(&psSocketClientTemp1->list);
-                                    pthread_mutex_destroy(&psSocketClientTemp1->mutex);
-                                    pthread_mutex_destroy(&psSocketClientTemp1->mutex_cond);
-                                    pthread_cond_destroy(&psSocketClientTemp1->cond_message_receive);
-                                    free(psSocketClientTemp1);
+                                    SocketClientDestory(psSocketClientTemp1);
                                     psSocketClientTemp1 = NULL;
                                     sSocketServer.u8NumConnClient --;
                                 }
                                 else    /*recv event*/
                                 {
                                     YELLOW_vPrintf(DBG_SOCK, "Recv Data is [%d]--- %s\n", psSocketClientTemp1->iSocketFd, psSocketClientTemp1->csClientData);
-                                    //SocketServerHandleRecvMessage(psSocketClientTemp1->iSocketFd, psSocketClientTemp1->csClientData);
-                                    uint16 u16MessageType = 0;
-                                    json_object *psJsonRecvMessage = NULL, *psJsonTemp = NULL;
-                                    if (NULL != (psJsonRecvMessage = json_tokener_parse(psSocketClientTemp1->csClientData)))
-                                    {
-                                        if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paSequenceNo)))
-                                        {
-                                            if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paMessageType)))
-                                            {
-                                                u16MessageType = json_object_get_int(psJsonTemp);
-                                            }
-                                            else
-                                            {
-                                                ERR_vPrintf(T_TRUE, "Json Format Error\n");
-                                                json_object_put(psJsonRecvMessage);
-                                                continue;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            ERR_vPrintf(T_TRUE, "Json Format Error\n");
-                                            json_object_put(psJsonRecvMessage);
-                                            continue;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        ERR_vPrintf(T_TRUE, "Json Format Error\n");
-                                        continue;
-                                    }
-
-                                    uint8 u8Handle = 0;
-                                    tsSocketCallbackEntry *psSocketCallbackEntryTemp = NULL;
-                                    dl_list_for_each(psSocketCallbackEntryTemp, &sSocketServer.sSocketCallbacks.sCallListHead.list, tsSocketCallbackEntry, list)
-                                    {
-                                        if (psSocketCallbackEntryTemp->u16Type == u16MessageType)
-                                        {
-                                            if (NULL != psSocketCallbackEntryTemp->prCallback)
-                                            {                                           
-                                                psSocketCallbackEntryTemp->prCallback(psJsonRecvMessage, psSocketClientTemp1->iSocketDataLen); 
-                                                u8Handle = 1;
-                                            }
-                                        }
-                                    }
-                                    if (0 == u8Handle)
-                                    {
-                                        pthread_cond_broadcast(&psSocketClientTemp1->cond_message_receive); 
-                                        json_object_put(psJsonRecvMessage);
-                                    }
-
+                                    SocketServerHandleRecvMessage(psSocketClientTemp1);
                                 }
                                 break;
                             }
