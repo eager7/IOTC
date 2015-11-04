@@ -33,6 +33,7 @@
 
 #include <json/json.h>
 
+#include "command.h"
 #include "socket_server.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
@@ -44,7 +45,7 @@
 static void *SocketServerHandleThread(void *arg);
 static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress);
 static void SocketCallBackListenerClear();
-
+static void SocketClientListFree();
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
@@ -98,15 +99,7 @@ teSocketStatus SocketServerFinished()
     SocketCallBackListenerClear();
     pthread_mutex_destroy(&sSocketServer.sSocketCallbacks.mutex);
 
-    tsSocketClient *psSocketClientTemp1, *psSocketClientTemp2 = NULL;
-    dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.list, tsSocketClient, list)
-    {
-        dl_list_del(&psSocketClientTemp1->list);
-        pthread_mutex_destroy(&psSocketClientTemp1->mutex);
-        pthread_mutex_destroy(&psSocketClientTemp1->mutex_cond);
-        free(psSocketClientTemp1);
-        psSocketClientTemp1 = NULL;
-    }
+    SocketClientListFree();
     BLUE_vPrintf(DBG_SOCK, " SocketServerFinished %s\n", (char*)psThread_Result);
 
     return E_SOCK_OK;
@@ -155,7 +148,7 @@ teSocketStatus SocektClientWaitMessage(tsSocketClient *psSocketCliet, char *psMe
     }
     switch (pthread_cond_timedwait(&psSocketCliet->cond_message_receive, &psSocketCliet->mutex_cond, &sTimeout))
     {
-        case (0):
+        case (E_WAIT_OK):
             DBG_vPrintf(DBG_SOCK, "Got message type\n");
             pthread_mutex_lock(&psSocketCliet->mutex);
             //Copy Data
@@ -163,7 +156,7 @@ teSocketStatus SocektClientWaitMessage(tsSocketClient *psSocketCliet, char *psMe
             pthread_mutex_unlock(&psSocketCliet->mutex);
             eSocketStatus = E_SOCK_OK;
             break;
-        case (1):
+        case (E_WAIT_TIMEOUT):
             ERR_vPrintf(T_TRUE, "Timed out for wait message \n");
             eSocketStatus = E_SOCK_NO_MESSAGE;
             break;
@@ -256,6 +249,19 @@ static void SocketCallBackListenerClear()
         psSocketCallbackEntry1 = NULL;
     }
     pthread_mutex_unlock(&sSocketServer.sSocketCallbacks.mutex);
+}
+
+static void SocketClientListFree()
+{
+    tsSocketClient *psSocketClientTemp1, *psSocketClientTemp2 = NULL;
+    dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.list, tsSocketClient, list)
+    {
+        dl_list_del(&psSocketClientTemp1->list);
+        pthread_mutex_destroy(&psSocketClientTemp1->mutex);
+        pthread_mutex_destroy(&psSocketClientTemp1->mutex_cond);
+        free(psSocketClientTemp1);
+        psSocketClientTemp1 = NULL;
+    }
 }
 
 static void ThreadSignalHandler(int sig)
@@ -401,7 +407,55 @@ static void *SocketServerHandleThread(void *arg)
                                 {
                                     YELLOW_vPrintf(DBG_SOCK, "Recv Data is [%d]--- %s\n", psSocketClientTemp1->iSocketFd, psSocketClientTemp1->csClientData);
                                     //SocketServerHandleRecvMessage(psSocketClientTemp1->iSocketFd, psSocketClientTemp1->csClientData);
-                                    pthread_cond_broadcast(&psSocketClientTemp1->cond_message_receive);
+                                    uint16 u16MessageType = 0;
+                                    json_object *psJsonRecvMessage = NULL, *psJsonTemp = NULL;
+                                    if (NULL != (psJsonRecvMessage = json_tokener_parse(psSocketClientTemp1->csClientData)))
+                                    {
+                                        if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paSequenceNo)))
+                                        {
+                                            if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paMessageType)))
+                                            {
+                                                u16MessageType = json_object_get_int(psJsonTemp);
+                                            }
+                                            else
+                                            {
+                                                ERR_vPrintf(T_TRUE, "Json Format Error\n");
+                                                json_object_put(psJsonRecvMessage);
+                                                continue;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            ERR_vPrintf(T_TRUE, "Json Format Error\n");
+                                            json_object_put(psJsonRecvMessage);
+                                            continue;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        ERR_vPrintf(T_TRUE, "Json Format Error\n");
+                                        continue;
+                                    }
+
+                                    uint8 u8Handle = 0;
+                                    tsSocketCallbackEntry *psSocketCallbackEntryTemp = NULL;
+                                    dl_list_for_each(psSocketCallbackEntryTemp, &sSocketServer.sSocketCallbacks.sCallListHead.list, tsSocketCallbackEntry, list)
+                                    {
+                                        if (psSocketCallbackEntryTemp->u16Type == u16MessageType)
+                                        {
+                                            if (NULL != psSocketCallbackEntryTemp->prCallback)
+                                            {                                           
+                                                psSocketCallbackEntryTemp->prCallback(psJsonRecvMessage, psSocketClientTemp1->iSocketDataLen); 
+                                                u8Handle = 1;
+                                            }
+                                        }
+                                    }
+                                    if (0 == u8Handle)
+                                    {
+                                        pthread_cond_broadcast(&psSocketClientTemp1->cond_message_receive); 
+                                        json_object_put(psJsonRecvMessage);
+                                    }
+
                                 }
                                 break;
                             }

@@ -53,6 +53,7 @@ typedef enum
     E_SOCK_ERROR_JOIN, 
     E_SOCK_ERROR_FORMAT, 
     E_SOCK_NO_MESSAGE,
+    E_SOCK_NO_MEMORY,
 }teSocketStatus;
 
 typedef enum
@@ -62,52 +63,55 @@ typedef enum
     E_EPOLL_ERROR = -1,
 }teSelectResult;
 
+typedef enum
+{
+    E_WAIT_OK = 0,
+    E_WAIT_TIMEOUT = ETIMEDOUT,
+}teCondWaitResult;
+
 typedef volatile enum
 {
     E_THREAD_STOPPED, 
     E_THREAD_RUNNING,  
     E_THREAD_STOPPING, 
-} teThreadState;  
+}teThreadState;  
 
 typedef void (*tprSocketMessageCallback)(void *pvMessage, uint16 u16Length);
 
 typedef struct _tsSocketCallbackEntry
 {
     uint16                          u16Type;       
-    tprSocketMessageCallback         prCallback;    
+    tprSocketMessageCallback        prCallback;    
     struct dl_list                  list;
-} tsSocketCallbackEntry;
+}tsSocketCallbackEntry;
 
 typedef struct _tsSocketCallbacks
 {
-    pthread_mutex_t         mutex;
-    tsSocketCallbackEntry    sCallListHead;
-} tsSocketCallbacks;
+    pthread_mutex_t                 mutex;
+    tsSocketCallbackEntry           sCallListHead;
+}tsSocketCallbacks;
 
 typedef struct _tSocketServer
 {
-    int iSocketFd;
-    pthread_mutex_t mutex;
-
-    teThreadState eThreadState;
-    pthread_t pthSocketServer;
-    
-    uint8 u8NumConnClient;
-    char *psNetAddress;
-
-    tsSocketCallbacks sSocketCallbacks;
+    int                             iSocketFd;
+    char                            *psNetAddress;
+    uint8                           u8NumConnClient;
+    pthread_t                       pthSocketServer;
+    teThreadState                   eThreadState;
+    pthread_mutex_t                 mutex;
+    tsSocketCallbacks               sSocketCallbacks;
 }tsSocketServer;
 
 typedef struct _tSocektClient
 {
-    int iSocketFd;
-    pthread_mutex_t mutex;              /*Lock The Data*/
-    pthread_mutex_t mutex_cond;         /*Lock The Cond*/
-    pthread_cond_t cond_message_receive;
-    struct sockaddr_in addrclient;
-    int iSocketDataLen;
-    char csClientData[MXBF];
-    struct dl_list list;
+    int                             iSocketFd;
+    struct sockaddr_in              addrclient;
+    pthread_mutex_t                 mutex;              /*Lock The Data*/
+    pthread_mutex_t                 mutex_cond;         /*Lock The Cond*/
+    pthread_cond_t                  cond_message_receive;
+    int                             iSocketDataLen;
+    char                            csClientData[MXBF];
+    struct dl_list                  list;
 }tsSocketClient;
 
 /****************************************************************************/
