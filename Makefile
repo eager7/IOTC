@@ -31,8 +31,8 @@ PROJ_LIBS += -ldaemon -lpthread -ljson-c -lsqlite3
 
 CC := gcc
 RM := -rm
-#CFLAGS += -O2 -g -Wno-unused-but-set-variable -Wall
-CFLAGS += -O2 -g -Wcomment -Wformat -Wimplicit -Wreturn-type
+CFLAGS += -O2 -g -Wno-unused-but-set-variable -Wall
+#CFLAGS += -O2 -g -Wcomment -Wformat -Wimplicit -Wreturn-type
 
 
 

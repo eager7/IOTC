@@ -64,48 +64,45 @@ typedef enum
 
 typedef volatile enum
 {
-    E_THREAD_STOPPED,   /**< Thread stopped */
-    E_THREAD_RUNNING,   /**< Thread running */
-    E_THREAD_STOPPING,  /**< Thread signaled to stop */
-} teState;               /**< Enumerated type of thread states */
+    E_THREAD_STOPPED, 
+    E_THREAD_RUNNING,  
+    E_THREAD_STOPPING, 
+} teThreadState;  
 
+typedef void (*tprSocketMessageCallback)(void *pvMessage, uint16 u16Length);
 
-typedef void (*tprSock_MessageCallback)(void *pvUser, uint16 u16Length, void *pvMessage);
-
-/** Linked list structure for a callback function entry */
-typedef struct _tsSock_CallbackEntry
+typedef struct _tsSocketCallbackEntry
 {
-    uint16                u16Type;        /**< Message type for this callback */
-    tprSock_MessageCallback   prCallback;     /**< User supplied callback function for this message type */
-    void                    *pvUser;        /**< User supplied data for the callback function */
-    struct _tsSock_CallbackEntry *psNext;     /**< Pointer to next in linked list */
-} tsSock_CallbackEntry;
+    uint16                          u16Type;       
+    tprSocketMessageCallback         prCallback;    
+    struct dl_list                  list;
+} tsSocketCallbackEntry;
 
-typedef struct
+typedef struct _tsSocketCallbacks
 {
     pthread_mutex_t         mutex;
-    tsSock_CallbackEntry    *psListHead;
-} tsCallbacks;
+    tsSocketCallbackEntry    sCallListHead;
+} tsSocketCallbacks;
 
 typedef struct _tSocketServer
 {
     int iSocketFd;
-
-    teState eState;
-    pthread_t pthSocketServer;
     pthread_mutex_t mutex;
+
+    teThreadState eThreadState;
+    pthread_t pthSocketServer;
     
     uint8 u8NumConnClient;
     char *psNetAddress;
 
-    tsCallbacks sCallbacks;
+    tsSocketCallbacks sSocketCallbacks;
 }tsSocketServer;
 
 typedef struct _tSocektClient
 {
     int iSocketFd;
-    pthread_mutex_t mutex;
-    pthread_mutex_t mutex_cond;
+    pthread_mutex_t mutex;              /*Lock The Data*/
+    pthread_mutex_t mutex_cond;         /*Lock The Cond*/
     pthread_cond_t cond_message_receive;
     struct sockaddr_in addrclient;
     int iSocketDataLen;

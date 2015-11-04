@@ -42,7 +42,8 @@
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
 static void *SocketServerHandleThread(void *arg);
-static teSocketStatus SocketServerHandleRecvMessage(int iSocketFd, char *psRecvMessage);
+static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress);
+static void SocketCallBackListenerClear();
 
 /****************************************************************************/
 /***        Local Variables                                               ***/
@@ -60,11 +61,148 @@ teSocketStatus SocketServerInit(int iPort, char *psNetAddress)
 
     signal(SIGPIPE, SIG_IGN);//ingnore signal interference
     memset(&sSocketServer, 0, sizeof(sSocketServer));
-    pthread_mutex_init(&sSocketServer.sCallbacks.mutex, NULL);
-    sSocketServer.sCallbacks.psListHead = NULL;
+    pthread_mutex_init(&sSocketServer.sSocketCallbacks.mutex, NULL);
+    dl_list_init(&sSocketServer.sSocketCallbacks.sCallListHead.list);
+
     memset(&sSocketClientHead, 0, sizeof(sSocketClientHead));
     dl_list_init(&sSocketClientHead.list);
+
+    teSocketStatus eSocketStatus;
+    if(E_SOCK_OK != (eSocketStatus = SocketInitSocket(iPort, psNetAddress)))
+    {
+        return eSocketStatus;
+    }
     
+    //start accept thread
+    BLUE_vPrintf(DBG_SOCK, "pthread_create\n");
+    if(0 != pthread_create(&sSocketServer.pthSocketServer, NULL, SocketServerHandleThread, NULL))
+    {
+        ERR_vPrintf(T_TRUE,"pthread_create failed, %s\n", strerror(errno));  
+        return E_SOCK_ERROR_PTHREAD_CREATE;
+    }
+    return E_SOCK_OK;
+}
+
+teSocketStatus SocketServerFinished()
+{
+    BLUE_vPrintf(DBG_SOCK, "Waiting SocketServerFinished...\n");
+    
+    sSocketServer.eThreadState = E_THREAD_STOPPED;
+    pthread_kill(sSocketServer.pthSocketServer, THREAD_SIGNAL);
+    void *psThread_Result = NULL;
+    if(0 != pthread_join(sSocketServer.pthSocketServer, &psThread_Result))
+    {
+        ERR_vPrintf(T_TRUE,"phread_join socket failed, %s\n", strerror(errno));  
+        return E_SOCK_ERROR_JOIN;
+    }
+    SocketCallBackListenerClear();
+    pthread_mutex_destroy(&sSocketServer.sSocketCallbacks.mutex);
+
+    tsSocketClient *psSocketClientTemp1, *psSocketClientTemp2 = NULL;
+    dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.list, tsSocketClient, list)
+    {
+        dl_list_del(&psSocketClientTemp1->list);
+        pthread_mutex_destroy(&psSocketClientTemp1->mutex);
+        pthread_mutex_destroy(&psSocketClientTemp1->mutex_cond);
+        free(psSocketClientTemp1);
+        psSocketClientTemp1 = NULL;
+    }
+    BLUE_vPrintf(DBG_SOCK, " SocketServerFinished %s\n", (char*)psThread_Result);
+
+    return E_SOCK_OK;
+}
+
+
+teSocketStatus SocektClientSendMessage(tsSocketClient *psSocketCliet, char *psMessage, int iMessageLen)
+{
+    DBG_vPrintf(DBG_SOCK, "SocektClientSendMessage\n");
+    if ((NULL == psSocketCliet) || (NULL == psMessage))
+    {
+        ERR_vPrintf(T_TRUE, "The paramter is error\n");
+        return E_SOCK_INVALID_PARAMETER;
+    }
+
+    if(-1 == send(psSocketCliet->iSocketFd, psMessage, iMessageLen, 0))
+    {
+        ERR_vPrintf(T_TRUE,"send failed, %s\n", strerror(errno));  
+        return E_SOCK_ERROR;
+    }   
+
+    return E_SOCK_OK;
+}
+
+teSocketStatus SocektClientWaitMessage(tsSocketClient *psSocketCliet, char *psMessage, uint32 u32WaitTimeoutms)
+{
+    DBG_vPrintf(DBG_SOCK, "SocektClientWaitMessage\n");
+    if ((NULL == psSocketCliet) || (NULL == psMessage))
+    {
+        ERR_vPrintf(T_TRUE, "The paramter is error\n");
+        return E_SOCK_INVALID_PARAMETER;
+    }
+
+    teSocketStatus eSocketStatus;
+    pthread_mutex_lock(&psSocketCliet->mutex_cond);
+    struct timeval sNow;
+    struct timespec sTimeout;
+    memset(&sNow, 0, sizeof(struct timeval));
+    gettimeofday(&sNow, NULL);
+    sTimeout.tv_sec = sNow.tv_sec + (u32WaitTimeoutms/1000);
+    sTimeout.tv_nsec = (sNow.tv_usec + ((u32WaitTimeoutms % 1000) * 1000)) * 1000;//ns
+    if (sTimeout.tv_nsec > 1000000000)
+    {
+        sTimeout.tv_sec++;
+        sTimeout.tv_nsec -= 1000000000;
+    }
+    switch (pthread_cond_timedwait(&psSocketCliet->cond_message_receive, &psSocketCliet->mutex_cond, &sTimeout))
+    {
+        case (0):
+            DBG_vPrintf(DBG_SOCK, "Got message type\n");
+            pthread_mutex_lock(&psSocketCliet->mutex);
+            //Copy Data
+            memcpy(psMessage, psSocketCliet->csClientData, psSocketCliet->iSocketDataLen);
+            pthread_mutex_unlock(&psSocketCliet->mutex);
+            eSocketStatus = E_SOCK_OK;
+            break;
+        case (1):
+            ERR_vPrintf(T_TRUE, "Timed out for wait message \n");
+            eSocketStatus = E_SOCK_NO_MESSAGE;
+            break;
+        
+        default:
+            DBG_vPrintf(DBG_SOCK, "Reset queue for next user\n");
+            eSocketStatus = E_SOCK_ERROR;
+            break;
+    }    
+    pthread_mutex_unlock(&psSocketCliet->mutex_cond);
+    return E_SOCK_OK;
+}
+
+teSocketStatus SocketCallBackListenerAdd(uint16 u16MessageType, tprSocketMessageCallback prSocketMessageCallback)
+{
+    DBG_vPrintf(DBG_SOCK, "SocketCallBackListerAdd\n");
+
+    pthread_mutex_lock(&sSocketServer.sSocketCallbacks.mutex);
+    //TODO:Add Listenser
+    tsSocketCallbackEntry *psSocketCallbackEntryNew = (tsSocketCallbackEntry*)malloc(sizeof(tsSocketCallbackEntry));
+    if(NULL == psSocketCallbackEntryNew)
+    {
+        ERR_vPrintf(T_TRUE, "Can't malloc memory %s\n", strerror(errno));
+        return E_SOCK_ERROR;
+    }
+    psSocketCallbackEntryNew->u16Type = u16MessageType;
+    psSocketCallbackEntryNew->prCallback = prSocketMessageCallback;
+    dl_list_add_tail(&sSocketServer.sSocketCallbacks.sCallListHead.list, &psSocketCallbackEntryNew->list);
+    pthread_mutex_unlock(&sSocketServer.sSocketCallbacks.mutex);
+    
+    return E_SOCK_OK;
+}
+
+
+/****************************************************************************/
+/***        Local    Functions                                            ***/
+/****************************************************************************/
+static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress)
+{
 	struct sockaddr_in server_addr;  
 	server_addr.sin_family = AF_INET;  
     if(NULL != psNetAddress)
@@ -101,48 +239,25 @@ teSocketStatus SocketServerInit(int iPort, char *psNetAddress)
         ERR_vPrintf(T_TRUE,"listen socket failed, %s\n", strerror(errno));  
         return E_SOCK_ERROR_LISTEN;
     }
-
-    //start accept thread
-    BLUE_vPrintf(DBG_SOCK, "pthread_create\n");
-    if(0 != pthread_create(&sSocketServer.pthSocketServer, NULL, SocketServerHandleThread, NULL))
-    {
-        ERR_vPrintf(T_TRUE,"pthread_create failed, %s\n", strerror(errno));  
-        return E_SOCK_ERROR_PTHREAD_CREATE;
-    }
     return E_SOCK_OK;
 }
 
-teSocketStatus SocketServerFinished()
+static void SocketCallBackListenerClear()
 {
-    BLUE_vPrintf(DBG_SOCK, "Waiting SocketServerFinished...\n");
-    
-    sSocketServer.eState = E_THREAD_STOPPED;
-    pthread_kill(sSocketServer.pthSocketServer, THREAD_SIGNAL);
-    void *psThread_Result = NULL;
-    if(0 != pthread_join(sSocketServer.pthSocketServer, &psThread_Result))
-    {
-        ERR_vPrintf(T_TRUE,"phread_join socket failed, %s\n", strerror(errno));  
-        return E_SOCK_ERROR_JOIN;
-    }
-    pthread_mutex_destroy(&sSocketServer.sCallbacks.mutex);
+    DBG_vPrintf(DBG_SOCK, "SocketCallBackListerAdd\n");
 
-    tsSocketClient *psSocketClientTemp1, *psSocketClientTemp2 = NULL;
-    dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.list, tsSocketClient, list)
+    pthread_mutex_lock(&sSocketServer.sSocketCallbacks.mutex);
+    //TODO:Remove Listenser
+    tsSocketCallbackEntry *psSocketCallbackEntry1, *psSocketCallbackEntry2 = NULL;
+    dl_list_for_each_safe(psSocketCallbackEntry1, psSocketCallbackEntry2, &sSocketClientHead.list, tsSocketCallbackEntry, list)
     {
-        dl_list_del(&psSocketClientTemp1->list);
-        pthread_mutex_destroy(&psSocketClientTemp1->mutex);
-        pthread_mutex_destroy(&psSocketClientTemp1->mutex_cond);
-        free(psSocketClientTemp1);
-        psSocketClientTemp1 = NULL;
+        dl_list_del(&psSocketCallbackEntry1->list);
+        free(psSocketCallbackEntry1);
+        psSocketCallbackEntry1 = NULL;
     }
-    BLUE_vPrintf(DBG_SOCK, " SocketServerFinished %s\n", (char*)psThread_Result);
-
-    return E_SOCK_OK;
+    pthread_mutex_unlock(&sSocketServer.sSocketCallbacks.mutex);
 }
 
-/****************************************************************************/
-/***        Local    Functions                                            ***/
-/****************************************************************************/
 static void ThreadSignalHandler(int sig)
 {
     BLUE_vPrintf(DBG_SOCK, "ThreadSignalHandler Used To Interrupt System Call\n");
@@ -151,7 +266,7 @@ static void ThreadSignalHandler(int sig)
 static void *SocketServerHandleThread(void *arg)
 {
     BLUE_vPrintf(DBG_SOCK, "SocketServerHandleThread\n");
-    sSocketServer.eState = E_THREAD_RUNNING;
+    sSocketServer.eThreadState = E_THREAD_RUNNING;
     signal(THREAD_SIGNAL, ThreadSignalHandler);
 
     int iEpollFd = epoll_create(65535);
@@ -169,7 +284,7 @@ static void *SocketServerHandleThread(void *arg)
         goto done;
     }
         
-    while(sSocketServer.eState)
+    while(sSocketServer.eThreadState)
     {
         DBG_vPrintf(DBG_SOCK, "\n++++++++++++++Waiting for iEpollFd Changed\n");
         int iEpollResult = epoll_wait(iEpollFd,EpollEventList,EPOLL_EVENT_NUM,-1);
@@ -312,70 +427,6 @@ done:
     
     DBG_vPrintf(DBG_SOCK, "Exit SocketServerHandleThread\n");
     pthread_exit("Get Killed Signal");
-}
-
-teSocketStatus SocektClientSendMessage(tsSocketClient *psSocketCliet, char *psMessage, int iMessageLen)
-{
-    DBG_vPrintf(DBG_SOCK, "SocektClientSendMessage\n");
-    if ((NULL == psSocketCliet) || (NULL == psMessage))
-    {
-        ERR_vPrintf(T_TRUE, "The paramter is error\n");
-        return E_SOCK_INVALID_PARAMETER;
-    }
-
-    if(-1 == send(psSocketCliet->iSocketFd, psMessage, iMessageLen, 0))
-    {
-        ERR_vPrintf(T_TRUE,"send failed, %s\n", strerror(errno));  
-        return E_SOCK_ERROR;
-    }   
-
-    return E_SOCK_OK;
-}
-
-teSocketStatus SocektClientWaitMessage(tsSocketClient *psSocketCliet, char *psMessage, uint32 u32WaitTimeoutms)
-{
-    DBG_vPrintf(DBG_SOCK, "SocektClientWaitMessage\n");
-    if ((NULL == psSocketCliet) || (NULL == psMessage))
-    {
-        ERR_vPrintf(T_TRUE, "The paramter is error\n");
-        return E_SOCK_INVALID_PARAMETER;
-    }
-
-    teSocketStatus eSocketStatus;
-    pthread_mutex_lock(&psSocketCliet->mutex_cond);
-    struct timeval sNow;
-    struct timespec sTimeout;
-    memset(&sNow, 0, sizeof(struct timeval));
-    gettimeofday(&sNow, NULL);
-    sTimeout.tv_sec = sNow.tv_sec + (u32WaitTimeoutms/1000);
-    sTimeout.tv_nsec = (sNow.tv_usec + ((u32WaitTimeoutms % 1000) * 1000)) * 1000;//ns
-    if (sTimeout.tv_nsec > 1000000000)
-    {
-        sTimeout.tv_sec++;
-        sTimeout.tv_nsec -= 1000000000;
-    }
-    switch (pthread_cond_timedwait(&psSocketCliet->cond_message_receive, &psSocketCliet->mutex_cond, &sTimeout))
-    {
-        case (0):
-            DBG_vPrintf(DBG_SOCK, "Got message type\n");
-            pthread_mutex_lock(&psSocketCliet->mutex);
-            //Copy Data
-            memcpy(psMessage, psSocketCliet->csClientData, psSocketCliet->iSocketDataLen);
-            pthread_mutex_unlock(&psSocketCliet->mutex);
-            eSocketStatus = E_SOCK_OK;
-            break;
-        case (1):
-            ERR_vPrintf(T_TRUE, "Timed out for wait message \n");
-            eSocketStatus = E_SOCK_NO_MESSAGE;
-            break;
-        
-        default:
-            DBG_vPrintf(DBG_SOCK, "Reset queue for next user\n");
-            eSocketStatus = E_SOCK_ERROR;
-            break;
-    }    
-    pthread_mutex_unlock(&psSocketCliet->mutex_cond);
-    return E_SOCK_OK;
 }
 
 

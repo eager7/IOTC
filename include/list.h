@@ -28,53 +28,16 @@ struct dl_list
 	struct dl_list *prev;
 };
 
-static  void dl_list_init ( struct dl_list *list )
-{
-	list->next = list;
-	list->prev = list;
-}
-
-static  void dl_list_add ( struct dl_list *list, struct dl_list *item )
-{
-	item->next = list->next;
-	item->prev = list;
-	list->next->prev = item;
-	list->next = item;
-}
-
-static  void dl_list_add_tail ( struct dl_list *list, struct dl_list *item )
-{
-	dl_list_add ( list->prev, item );
-}
-
-static  void dl_list_del ( struct dl_list *item )
-{
-	item->next->prev = item->prev;
-	item->prev->next = item->next;
-	item->next = NULL;
-	item->prev = NULL;
-}
-
-static  int dl_list_empty ( struct dl_list *list )
-{
-	return list->next == list;
-}
-
-static  unsigned int dl_list_len ( struct dl_list *list )
-{
-	struct dl_list *item;
-	int count = 0;
-	for ( item = list->next; item != list; item = item->next )
-	{
-		count++;
-	}
-	return count;
-}
+void dl_list_init ( struct dl_list *list );
+void dl_list_add ( struct dl_list *list, struct dl_list *item );
+void dl_list_add_tail ( struct dl_list *list, struct dl_list *item );
+void dl_list_del ( struct dl_list *item );
+int dl_list_empty ( struct dl_list *list );
+unsigned int dl_list_len ( struct dl_list *list );
 
 #ifndef offsetof
 #define offsetof(type, member) ((long) &((type *) 0)->member)
 #endif
-
 
 #define dl_list_entry(item, type, member) \
 	((type *) ((char *) item - offsetof(type, member)))
