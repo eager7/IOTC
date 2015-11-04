@@ -1,12 +1,12 @@
 /****************************************************************************
  *
- * MODULE:             iotc_device.h
+ * MODULE:             iotc_device_type.h
  *
- * COMPONENT:          IOTC Devices interface
+ * COMPONENT:          Utils interface
  *
  * REVISION:           $Revision:  0$
  *
- * DATED:              $Date: 2015-10-31 15:13:17 +0100 (Thu, 21 Oct 2015 $
+ * DATED:              $Date: 2015-10-21 15:13:17 +0100 (Thu, 21 Oct 2015 $
  *
  * AUTHOR:             PCT
  *
@@ -17,8 +17,8 @@
  ***************************************************************************/
 
 
-#ifndef __H_IOTC_DEVICES_H_
-#define __H_IOTC_DEVICES_H_
+#ifndef __H_IOTC_DEVICE_TYPE_H_
+#define __H_IOTC_DEVICE_TYPE_H_
 
 #if defined __cplusplus
 extern "C"{
@@ -26,10 +26,8 @@ extern "C"{
 /****************************************************************************/
 /***        Include files                                                 ***/
 /****************************************************************************/
-#include <pthread.h>
 #include "utils.h"
-#include "list.h"
-#include "iotc_device_type.h"
+
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
@@ -38,26 +36,62 @@ extern "C"{
 /****************************************************************************/
 /***        Type Definitions                                              ***/
 /****************************************************************************/
-typedef enum
+typedef enum _teIotcDeviceType
 {
-    E_IOTC_OK,
-    E_IOTC_ERROR,
-    E_IOTC_EXIST,
-    E_IOTC_ERROR_MALLOC,
-}teIotcStatus;
+	E_DEVICE_SWITCH_LIGHT 		= 0x0001,
+	E_DEVICE_DIMMER_LIGHT		= 0x0002,
+	E_DEVICE_COLOR_LIGHT		= 0x0003,
 
-typedef struct _tsIotc_Device
+	E_DEVICE_SMART_PLUG			= 0x0004,
+	E_DEVICE_SENSOR_LIGHT		= 0x0005,
+	E_DEVICE_SENSOR_TEMPHUMI	= 0x0006,
+	E_DEVICE_SENSOR_BINARY		= 0x0007,
+}teIotcDeviceType;
+
+typedef struct _tsDeviceSwitchLight
 {
-    pthread_mutex_t mutex;
-    char            pcDeviceName[MXBF];
-    uint16          u16DeviceID;
-    bool_t          blDeviceOnline;
-    
-    uint64          u64DeviceIndex;
-    void  			*psDeviceServer;
+	bool_t 	OnOff;	
+	uint8 	u8PowerValue;
+}tsDeviceSwitchLight;
 
-    struct dl_list  list;
-}tsIotcDevice;
+typedef struct _tsDeviceDimmerLight
+{
+	bool_t 	OnOff;	
+	uint8 	u8Level;
+	uint8 	u8PowerValue;
+}tsDeviceDimmerLight;
+
+typedef struct _tsDeviceColorLight
+{
+	bool_t 	OnOff;	
+	uint8   u8Level;
+	uint32	u32HsvValue;
+	uint8 	u8PowerValue;	
+}tsDeviceColorLight;
+
+typedef struct _tsDeviceSmartPlug
+{
+	bool_t 	OnOff;	
+	uint8 	u8PowerValue;	
+}tsDeviceSmartPlug;
+
+typedef struct _tsDeviceSensorLight
+{
+	uint16 	u16LightValue;	
+	uint8 	u8PowerValue;		
+}tsDeviceSensorLight;
+
+typedef struct _tsDeviceSensorTempHumi
+{
+	bool_t 	OnOff;	
+	uint8 	u8PowerValue;
+}tsDeviceSensorTempHumi;
+
+typedef struct _tsDeviceSensorBinary
+{
+	bool_t 	Status;	
+	uint8 	u8PowerValue;
+}tsDeviceSwitchLight;
 
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
@@ -66,7 +100,7 @@ typedef struct _tsIotc_Device
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
-extern tsIotcDevice sIotcDeviceHead;
+
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
@@ -74,14 +108,6 @@ extern tsIotcDevice sIotcDeviceHead;
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
-teIotcStatus IotcDeviceAdd(tsIotcDevice *psIotcDevice);
-teIotcStatus IotcDeviceRemove(tsIotcDevice *psIotcDevice);
-
-teIotcStatus IotcDeviceServerAdd();
-teIotcStatus IotcDeviceAttributeAdd();
-
-
-
 /****************************************************************************/
 /***        Locate   Functions                                            ***/
 /****************************************************************************/
