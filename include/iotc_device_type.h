@@ -91,7 +91,7 @@ typedef struct _tsDeviceSensorBinary
 {
 	bool_t 	Status;	
 	uint8 	u8PowerValue;
-}tsDeviceSwitchLight;
+}tsDeviceSensorBinary;
 
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/

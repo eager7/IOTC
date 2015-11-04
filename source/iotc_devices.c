@@ -33,7 +33,7 @@
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
-static teIotcStatus IotcDeviceAddService(tsIotcDevice *psIotcDevice, uint16 u16DeviceID);
+static teIotcStatus IotcDeviceAddService(tsIotcDevice *psIotcDevice, uint16 u16DeviceID, char *psDeviceName, uint64 u64DeviceIndex);
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
@@ -66,8 +66,8 @@ teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64Dev
     {
         if (u64DeviceIndex == psIotcDeviceTemp->u64DeviceIndex)
         {
-            DBG_vPrintf(DBG_DEVICE, "The Device is Exist, %llu\n", psIotcDevice->u64DeviceIndex);
-            psIotcDevice->blDeviceOnline = T_TRUE;
+            DBG_vPrintf(DBG_DEVICE, "The Device is Exist, 0x%04llx\n", u64DeviceIndex);
+            psIotcDeviceTemp->blDeviceOnline = T_TRUE;
             pthread_mutex_unlock(&sIotcDeviceHead.mutex);
             return E_IOTC_EXIST;
         }
@@ -83,10 +83,10 @@ teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64Dev
     }
     
     psIotcDeviceNew->u16DeviceID = u16DeviceID;
-    psIotcDeviceNew->u64DeviceIndex = psIotcDevice->u64DeviceIndex;
+    psIotcDeviceNew->u64DeviceIndex = u64DeviceIndex;
     psIotcDeviceNew->blDeviceOnline = T_TRUE;
 
-    if(E_IOTC_OK != IotcDeviceAddService(psIotcDeviceNew, u16DeviceID))
+    if(E_IOTC_OK != IotcDeviceAddService(psIotcDeviceNew, u16DeviceID, paDeviceName, u64DeviceIndex))
     {
         ERR_vPrintf(T_TRUE, "Malloc New Memory Failed\n");
         pthread_mutex_unlock(&sIotcDeviceHead.mutex);
@@ -130,7 +130,7 @@ teIotcStatus IotcDeviceRemove(tsIotcDevice *psIotcDevice)
 /****************************************************************************/
 /***        Locate   Functions                                            ***/
 /****************************************************************************/
-static teIotcStatus IotcDeviceAddService(tsIotcDevice *psIotcDevice, uint16 u16DeviceID, char *paDeviceName)
+static teIotcStatus IotcDeviceAddService(tsIotcDevice *psIotcDevice, uint16 u16DeviceID, char *psDeviceName, uint64 u64DeviceIndex)
 {
     DBG_vPrintf(DBG_DEVICE, "IotcDeviceAddService\n");    
     if (NULL == psIotcDevice)
@@ -149,16 +149,130 @@ static teIotcStatus IotcDeviceAddService(tsIotcDevice *psIotcDevice, uint16 u16D
             }    
             psIotcDevice->psDeviceServer = psDeviceSwitchLight;
 
-            if(NULL != paDeviceName)
+            if(NULL != psDeviceName)
             {
-               memcpy(psIotcDeviceNew->pcDeviceName, psDeviceName, strlen(psDeviceName));
+               memcpy(psIotcDevice->pcDeviceName, psDeviceName, strlen(psDeviceName));
             }
             else
             {
-                memcpy(psIotcDeviceNew->pcDeviceName, "SwitchLight-%04x", u64DeviceIndex);
+                memcpy(psIotcDevice->pcDeviceName, "SwitchLight-%04x", u64DeviceIndex);
             }
         }
         break;
+        case(E_DEVICE_DIMMER_LIGHT):
+        {
+            tsDeviceDimmerLight *psDeviceDimmerLight = (tsDeviceDimmerLight*)malloc(sizeof(tsDeviceDimmerLight));
+            if(NULL == psDeviceDimmerLight)
+            {
+                return E_IOTC_ERROR;
+            }    
+            psIotcDevice->psDeviceServer = psDeviceDimmerLight;
+
+            if(NULL != psDeviceName)
+            {
+               memcpy(psIotcDevice->pcDeviceName, psDeviceName, strlen(psDeviceName));
+            }
+            else
+            {
+                memcpy(psIotcDevice->pcDeviceName, "DimmerLight-%04x", u64DeviceIndex);
+            }
+        }
+        break;    
+        case(E_DEVICE_COLOR_LIGHT):
+        {
+            tsDeviceColorLight *psDeviceColorLight = (tsDeviceColorLight*)malloc(sizeof(tsDeviceColorLight));
+            if(NULL == psDeviceColorLight)
+            {
+                return E_IOTC_ERROR;
+            }    
+            psIotcDevice->psDeviceServer = psDeviceColorLight;
+
+            if(NULL != psDeviceName)
+            {
+               memcpy(psIotcDevice->pcDeviceName, psDeviceName, strlen(psDeviceName));
+            }
+            else
+            {
+                memcpy(psIotcDevice->pcDeviceName, "ColorLight-%04x", u64DeviceIndex);
+            }
+        }
+        break;      
+        case(E_DEVICE_SMART_PLUG):
+        {
+            tsDeviceSmartPlug *psDeviceSmartPlug = (tsDeviceSmartPlug*)malloc(sizeof(tsDeviceSmartPlug));
+            if(NULL == psDeviceSmartPlug)
+            {
+                return E_IOTC_ERROR;
+            }    
+            psIotcDevice->psDeviceServer = psDeviceSmartPlug;
+
+            if(NULL != psDeviceName)
+            {
+               memcpy(psIotcDevice->pcDeviceName, psDeviceName, strlen(psDeviceName));
+            }
+            else
+            {
+                memcpy(psIotcDevice->pcDeviceName, "SmartPlug-%04x", u64DeviceIndex);
+            }
+        }
+        break;    
+        case(E_DEVICE_SENSOR_LIGHT):
+        {
+            tsDeviceSensorLight *psDeviceSensorLight = (tsDeviceSensorLight*)malloc(sizeof(tsDeviceSensorLight));
+            if(NULL == psDeviceSensorLight)
+            {
+                return E_IOTC_ERROR;
+            }    
+            psIotcDevice->psDeviceServer = psDeviceSensorLight;
+
+            if(NULL != psDeviceName)
+            {
+               memcpy(psIotcDevice->pcDeviceName, psDeviceName, strlen(psDeviceName));
+            }
+            else
+            {
+                memcpy(psIotcDevice->pcDeviceName, "SensorLight-%04x", u64DeviceIndex);
+            }
+        }
+        break;   
+        case(E_DEVICE_SENSOR_TEMPHUMI):
+        {
+            tsDeviceSensorTempHumi *psDeviceSensorTempHumi = (tsDeviceSensorTempHumi*)malloc(sizeof(tsDeviceSensorTempHumi));
+            if(NULL == psDeviceSensorTempHumi)
+            {
+                return E_IOTC_ERROR;
+            }    
+            psIotcDevice->psDeviceServer = psDeviceSensorTempHumi;
+
+            if(NULL != psDeviceName)
+            {
+               memcpy(psIotcDevice->pcDeviceName, psDeviceName, strlen(psDeviceName));
+            }
+            else
+            {
+                memcpy(psIotcDevice->pcDeviceName, "SensorTempHumi-%04x", u64DeviceIndex);
+            }
+        }
+        break;   
+        case(E_DEVICE_SENSOR_BINARY):
+        {
+            tsDeviceSensorBinary *psDeviceSensorBinary = (tsDeviceSensorBinary*)malloc(sizeof(tsDeviceSensorBinary));
+            if(NULL == psDeviceSensorBinary)
+            {
+                return E_IOTC_ERROR;
+            }    
+            psIotcDevice->psDeviceServer = psDeviceSensorBinary;
+
+            if(NULL != psDeviceName)
+            {
+               memcpy(psIotcDevice->pcDeviceName, psDeviceName, strlen(psDeviceName));
+            }
+            else
+            {
+                memcpy(psIotcDevice->pcDeviceName, "SensorBinary-%04x", u64DeviceIndex);
+            }
+        }
+        break;  
         default:
         {
 
