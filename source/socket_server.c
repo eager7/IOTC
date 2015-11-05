@@ -107,16 +107,16 @@ teSocketStatus SocketServerFinished()
 }
 
 
-teSocketStatus SocektClientSendMessage(tsSocketClient *psSocketCliet, char *psMessage, int iMessageLen)
+teSocketStatus SocektClientSendMessage(int iSocketFd, char *psMessage, int iMessageLen)
 {
     DBG_vPrintf(DBG_SOCK, "SocektClientSendMessage\n");
-    if ((NULL == psSocketCliet) || (NULL == psMessage))
+    if (NULL == psMessage)
     {
         ERR_vPrintf(T_TRUE, "The paramter is error\n");
         return E_SOCK_INVALID_PARAMETER;
     }
 
-    if(-1 == send(psSocketCliet->iSocketFd, psMessage, iMessageLen, 0))
+    if(-1 == send(iSocketFd, psMessage, iMessageLen, 0))
     {
         ERR_vPrintf(T_TRUE,"send failed, %s\n", strerror(errno));  
         return E_SOCK_ERROR;
@@ -125,17 +125,25 @@ teSocketStatus SocektClientSendMessage(tsSocketClient *psSocketCliet, char *psMe
     return E_SOCK_OK;
 }
 
-teSocketStatus SocektClientWaitMessage(tsSocketClient *psSocketCliet, char *psMessage, uint32 u32WaitTimeoutms)
+teSocketStatus SocektClientWaitMessage(int iSocketFd, char *psMessage, uint32 u32WaitTimeoutms)
 {
     DBG_vPrintf(DBG_SOCK, "SocektClientWaitMessage\n");
-    if ((NULL == psSocketCliet) || (NULL == psMessage))
+    if (NULL == psMessage)
     {
         ERR_vPrintf(T_TRUE, "The paramter is error\n");
         return E_SOCK_INVALID_PARAMETER;
     }
 
+    tsSocketClient *psSocketClient = NULL;
+    dl_list_for_each(psSocketClient, &sSocketClientHead.list, tsSocketClient, list)
+    {
+        if (iSocketFd == psSocketClient->iSocketFd)
+        {
+            break;
+        }
+    }
     teSocketStatus eSocketStatus;
-    pthread_mutex_lock(&psSocketCliet->mutex_cond);
+    pthread_mutex_lock(&psSocketClient->mutex_cond);
     struct timeval sNow;
     struct timespec sTimeout;
     memset(&sNow, 0, sizeof(struct timeval));
@@ -147,14 +155,14 @@ teSocketStatus SocektClientWaitMessage(tsSocketClient *psSocketCliet, char *psMe
         sTimeout.tv_sec++;
         sTimeout.tv_nsec -= 1000000000;
     }
-    switch (pthread_cond_timedwait(&psSocketCliet->cond_message_receive, &psSocketCliet->mutex_cond, &sTimeout))
+    switch (pthread_cond_timedwait(&psSocketClient->cond_message_receive, &psSocketClient->mutex_cond, &sTimeout))
     {
         case (E_WAIT_OK):
             DBG_vPrintf(DBG_SOCK, "Got message type\n");
-            pthread_mutex_lock(&psSocketCliet->mutex);
+            pthread_mutex_lock(&psSocketClient->mutex);
             //Copy Data
-            memcpy(psMessage, psSocketCliet->csClientData, psSocketCliet->iSocketDataLen);
-            pthread_mutex_unlock(&psSocketCliet->mutex);
+            memcpy(psMessage, psSocketClient->csClientData, psSocketClient->iSocketDataLen);
+            pthread_mutex_unlock(&psSocketClient->mutex);
             eSocketStatus = E_SOCK_OK;
             break;
         case (E_WAIT_TIMEOUT):
@@ -167,7 +175,7 @@ teSocketStatus SocektClientWaitMessage(tsSocketClient *psSocketCliet, char *psMe
             eSocketStatus = E_SOCK_ERROR;
             break;
     }    
-    pthread_mutex_unlock(&psSocketCliet->mutex_cond);
+    pthread_mutex_unlock(&psSocketClient->mutex_cond);
     return E_SOCK_OK;
 }
 

@@ -64,6 +64,7 @@ typedef enum
 #define paKeyDeviceName    "device_name"
 #define paKeyDeviceId      "device_id"
 #define paKeyDeviceIndex   "device_index"
+#define paKeyDeviceOnOff "onoff"
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/

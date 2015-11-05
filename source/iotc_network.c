@@ -37,7 +37,6 @@
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
 static void IotcNetworkHandleDevicesReport(void *psUser, void *pvMessage, uint16 u16Length);
-
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
@@ -95,7 +94,7 @@ static void IotcNetworkHandleDevicesReport(void *psUser, void *pvMessage, uint16
             uint64 u64DeviceIndex = json_object_get_int64(json_object_object_get(psJsonDevice, paKeyDeviceIndex));
             if(E_IOTC_OK != IotcDeviceAdd(paDeviceName, u16DeviceID, u64DeviceIndex, *iSocketClientFd))
             {
-                ERR_vPrintf(T_TRUE, "IotcDeviceAdd Error\n");
+                ERR_vPrintf(T_TRUE, "IotcDeviceAdd Error, Maybe exist...\n");
             }
         }
     }

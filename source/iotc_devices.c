@@ -19,8 +19,9 @@
 /****************************************************************************/
 /***        Include files                                                 ***/
 /****************************************************************************/
+#include <json/json.h>
 #include "iotc_devices.h"
-
+#include "socket_server.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
@@ -34,6 +35,7 @@
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
 static teIotcStatus IotcDeviceAddService(tsIotcDevice *psIotcDevice, uint16 u16DeviceID, char *psDeviceName, uint64 u64DeviceIndex);
+static teAttStatus  IotcDeviceSetDeviceAttribute(int iSocketFd, uint64 u64DeviceIndex, uint8 u8Type, tuAttributeData uAttributeData, teAtttibuteType eAtttibuteType);
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
@@ -166,6 +168,7 @@ static teIotcStatus IotcDeviceAddService(tsIotcDevice *psIotcDevice, uint16 u16D
             {
                 return E_IOTC_ERROR;
             }    
+            psDeviceSwitchLight->prDeviceSetDeviceAttribute = IotcDeviceSetDeviceAttribute;
             psIotcDevice->psDeviceServer = psDeviceSwitchLight;
 
             if(NULL != psDeviceName)
@@ -303,5 +306,33 @@ static teIotcStatus IotcDeviceAddService(tsIotcDevice *psIotcDevice, uint16 u16D
 }
 
 
+static teAttStatus IotcDeviceSetDeviceAttribute(int iSocketFd, uint64 u64DeviceIndex, uint8 u8Type, tuAttributeData uAttributeData, teAtttibuteType eAtttibuteType)
+{
+    switch (eAtttibuteType)
+    {
+        case(E_ATTRIBUTE_ONOFF):
+        {
+            json_object *psJsonMessage = json_object_new_object();
+            json_object_object_add(psJsonMessage, paKeyDeviceOnOff, json_object_new_int(uAttributeData.u8Data));
+            //struct timeval sNow;
+            //gettimeofday(&sNow, NULL);
+            //srand((unsigned)time(NULL));
+            //int iSequeneNo = rand()%10000; //Scattered all requests by used rand
+            SocektClientSendMessage(iSocketFd, (char*)json_object_get_string(psJsonMessage), strlen(json_object_get_string(psJsonMessage)));
+        }
+        break;
+        case(E_ATTRIBUTE_LEVEL):
+        {
+
+        }
+        break;
+        case(E_ATTRIBUTE_COLOR):
+        {
+
+        }
+        break;
+    }
+    return E_ATT_OK;
+}
 
 
