@@ -56,6 +56,7 @@ typedef enum
     E_SOCK_ERROR_FORMAT, 
     E_SOCK_NO_MESSAGE,
     E_SOCK_NO_MEMORY,
+    E_SOCK_DISCONNECT,
 }teSocketStatus;
 
 typedef enum

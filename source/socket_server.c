@@ -135,14 +135,20 @@ teSocketStatus SocektClientWaitMessage(int iSocketFd, char *psMessage, uint32 u3
     }
 
     tsSocketClient *psSocketClient = NULL;
+    int iFlag = 0;
     dl_list_for_each(psSocketClient, &sSocketClientHead.list, tsSocketClient, list)
     {
         if (iSocketFd == psSocketClient->iSocketFd)
         {
+            iFlag = 1;
             break;
         }
     }
-    teSocketStatus eSocketStatus;
+    if (!iFlag)
+    {
+        return E_SOCK_DISCONNECT;
+    }
+    teSocketStatus eSocketStatus; 
     pthread_mutex_lock(&psSocketClient->mutex_cond);
     struct timeval sNow;
     struct timespec sTimeout;
