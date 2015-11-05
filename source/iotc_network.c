@@ -22,6 +22,7 @@
 #include "iotc_network.h"
 #include "iotc_devices.h"
 #include "socket_server.h"
+#include <json/json.h>
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
@@ -76,7 +77,7 @@ static void IotcNetworkHandleDevicesReport(void *pvMessage, uint16 u16Length)
     if(NULL == pvMessage)
     {
         ERR_vPrintf(T_TRUE, "The paramer is error\n");
-        return E_NETWORK_ERROR_PARAM;
+        return;
     }
     json_object *psJsonMessage = (struct json_object*)pvMessage;
     

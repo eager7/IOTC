@@ -116,6 +116,10 @@ typedef struct _tSocektClient
     struct dl_list                  list;
 }tsSocketClient;
 
+typedef struct _tsSocketCondQuene
+{
+    
+}teSocketCondQuene;
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/

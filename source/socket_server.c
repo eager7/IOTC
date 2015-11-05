@@ -45,6 +45,8 @@ static void *SocketServerHandleThread(void *arg);
 static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress);
 static void SocketCallBackListenerClear();
 static void SocketClientListFree();
+static void *SocketClientDataHandleThread(void *arg);
+
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
@@ -332,7 +334,6 @@ static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClie
             if (NULL != psSocketCallbackEntryTemp->prCallback)
             {                                           
                 psSocketCallbackEntryTemp->prCallback(psJsonRecvMessage, psSocketClient->iSocketDataLen); 
-                json_object_put(psJsonRecvMessage);
                 u8Handle = 1;
             }
         }
@@ -340,10 +341,23 @@ static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClie
     if (0 == u8Handle)
     {
         pthread_cond_broadcast(&psSocketClient->cond_message_receive); 
-        json_object_put(psJsonRecvMessage);
     }
+    json_object_put(psJsonRecvMessage);
     
     return E_SOCK_OK;
+}
+
+static void *SocketClientDataHandleThread(void *arg)
+{
+    BLUE_vPrintf(DBG_SOCK, "SocketClientDataHandleThread\n");
+
+    tsSocketClient *psSocketClientThread = (tsSocketClient*)arg;
+    
+    SocketServerHandleRecvMessage(psSocketClientThread);
+    free(psSocketClientThread);
+    
+    DBG_vPrintf(DBG_SOCK, "Exit SocketClientDataHandleThread\n");
+    pthread_exit("exit");
 }
 
 static void ThreadSignalHandler(int sig)
@@ -472,7 +486,26 @@ static void *SocketServerHandleThread(void *arg)
                                 else    /*recv event*/
                                 {
                                     YELLOW_vPrintf(DBG_SOCK, "Recv Data is [%d]--- %s\n", psSocketClientTemp1->iSocketFd, psSocketClientTemp1->csClientData);
-                                    SocketServerHandleRecvMessage(psSocketClientTemp1);
+                                    //Start a new thread to handle data
+                                    BLUE_vPrintf(DBG_SOCK, "pthread_create\n");
+                                    
+                                    tsSocketClient *psSocketClientThread = (tsSocketClient*)malloc(sizeof(tsSocketClient));
+                                    if(NULL == psSocketClientThread)
+                                    {
+                                        goto done;
+                                    }
+                                    memcpy(psSocketClientThread, psSocketClientTemp1, sizeof(tsSocketClient));
+                                    pthread_t pthreadHandle;
+                                    pthread_attr_t attr;
+                                    pthread_attr_init(&attr);
+                                    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+                                    if(0 != pthread_create(&pthreadHandle, &attr, SocketClientDataHandleThread, psSocketClientThread))
+                                    {
+                                        ERR_vPrintf(T_TRUE,"pthread_create failed, %s\n", strerror(errno));  
+                                        goto done;
+                                    }
+
+                                    //SocketServerHandleRecvMessage(psSocketClientTemp1);
                                 }
                                 break;
                             }
