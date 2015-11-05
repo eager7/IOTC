@@ -30,6 +30,7 @@ extern "C"{
 #include "utils.h"
 #include "list.h"
 #include "iotc_device_type.h"
+#include "socket_server.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
@@ -44,6 +45,7 @@ typedef enum
     E_IOTC_ERROR,
     E_IOTC_EXIST,
     E_IOTC_ERROR_MALLOC,
+    E_IOTC_ERROR_PARAM,
 }teIotcStatus;
 
 typedef struct _tsIotc_Device
@@ -54,7 +56,9 @@ typedef struct _tsIotc_Device
     bool_t          blDeviceOnline;
     
     uint64          u64DeviceIndex;
-    void  			*psDeviceServer;
+    void            *psDeviceServer;
+
+    tsSocketClient  *psSocketClient;
 
     struct dl_list  list;
 }tsIotcDevice;
@@ -74,7 +78,7 @@ extern tsIotcDevice sIotcDeviceHead;
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
-teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex);
+teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, tsSocketClient *psSocketClient);
 teIotcStatus IotcDeviceRemove(tsIotcDevice *psIotcDevice);
 
 teIotcStatus IotcDeviceServerAdd();

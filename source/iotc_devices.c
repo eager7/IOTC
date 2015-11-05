@@ -56,10 +56,15 @@ teIotcStatus IotcDeviceInit()
     return E_IOTC_OK;
 }
 
-teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex)
+teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, tsSocketClient *psSocketClient)
 {
     DBG_vPrintf(DBG_DEVICE, "IotcDeviceAdd\n");
-        
+
+    if(NULL == psSocketClient)
+    {
+        return E_IOTC_ERROR_PARAM;
+    }
+    
     pthread_mutex_lock(&sIotcDeviceHead.mutex);
     tsIotcDevice *psIotcDeviceTemp = NULL;
     dl_list_for_each(psIotcDeviceTemp, &sIotcDeviceHead.list, tsIotcDevice, list)
