@@ -31,6 +31,8 @@ extern "C"{
 #include "utils.h"
 #include <netinet/in.h>
 #include "list.h"
+#include "iotc_command.h"
+
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
@@ -133,6 +135,7 @@ teSocketStatus SocketServerInit(int iPort, char *psNetAddress);
 teSocketStatus SocketServerFinished();
 teSocketStatus SocektServerSendMessage(int iClientFd, uint16 u16Type, uint16 u16Length, void *psMessage, uint16 *pu16SquenceNo);
 teSocketStatus SocketServerWaitMessage(uint16 u16Type, uint32 u32WaitTimeout, uint16 *pu16Length, void **ppvMessage);
+teSocketStatus SocketCallBackListenerAdd(uint16 u16MessageType, tprSocketMessageCallback prSocketMessageCallback);
 
 
 #if defined __cplusplus

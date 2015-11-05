@@ -56,6 +56,25 @@ teIotcStatus IotcDeviceInit()
     return E_IOTC_OK;
 }
 
+teIotcStatus IotcDeviceFinished()
+{
+    DBG_vPrintf(DBG_DEVICE, "IotcDeviceFinished\n");
+    
+    pthread_mutex_lock(&sIotcDeviceHead.mutex);
+    tsIotcDevice *psIotcDeviceTemp1 = NULL, *psIotcDeviceTemp2 = NULL;
+    dl_list_for_each_safe(psIotcDeviceTemp1, psIotcDeviceTemp2, &sIotcDeviceHead.list, tsIotcDevice, list)
+    {
+        dl_list_del(&psIotcDeviceTemp1->list);
+        free(psIotcDeviceTemp1->psDeviceServer);
+        free(psIotcDeviceTemp1);
+        psIotcDeviceTemp1 = NULL;
+    }    
+    pthread_mutex_unlock(&sIotcDeviceHead.mutex);
+    pthread_mutex_destroy(&sIotcDeviceHead.mutex);
+    
+    return E_IOTC_OK;
+}
+
 teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, tsSocketClient *psSocketClient)
 {
     DBG_vPrintf(DBG_DEVICE, "IotcDeviceAdd\n");

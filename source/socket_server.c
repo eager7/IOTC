@@ -33,7 +33,6 @@
 
 #include <json/json.h>
 
-#include "command.h"
 #include "socket_server.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
@@ -333,6 +332,7 @@ static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClie
             if (NULL != psSocketCallbackEntryTemp->prCallback)
             {                                           
                 psSocketCallbackEntryTemp->prCallback(psJsonRecvMessage, psSocketClient->iSocketDataLen); 
+                json_object_put(psJsonRecvMessage);
                 u8Handle = 1;
             }
         }

@@ -18,8 +18,8 @@
  ***************************************************************************/
 
 
-#ifndef __H_COMMAND_H_
-#define __H_COMMAND_H_
+#ifndef __H_IOTC_COMMAND_H_
+#define __H_IOTC_COMMAND_H_
 
 #if defined __cplusplus
 extern "C"{
@@ -40,7 +40,12 @@ extern "C"{
 /****************************************************************************/
 /***        Type Definitions                                              ***/
 /****************************************************************************/
-
+typedef enum
+{
+    E_COMMAND_DEVICES_SEARCH                = 0x0001,
+    E_COMMAND_DEVICES_REPORT                = 0x0002,
+    E_COMMAND_SET_ONOFF                     = 0x0003,
+}teIotcCommand;
 
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
@@ -53,8 +58,8 @@ extern "C"{
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
-const char *paSequenceNo = "SequenceNo";
-const char *paMessageType = "MessageType";
+#define paSequenceNo    "SequenceNo"
+#define paMessageType   "MessageType"
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/

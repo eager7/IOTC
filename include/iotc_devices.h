@@ -78,11 +78,10 @@ extern tsIotcDevice sIotcDeviceHead;
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
+teIotcStatus IotcDeviceInit();
+teIotcStatus IotcDeviceFinished();
 teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, tsSocketClient *psSocketClient);
 teIotcStatus IotcDeviceRemove(tsIotcDevice *psIotcDevice);
-
-teIotcStatus IotcDeviceServerAdd();
-teIotcStatus IotcDeviceAttributeAdd();
 
 
 
