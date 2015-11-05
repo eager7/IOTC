@@ -38,59 +38,59 @@ extern "C"{
 /****************************************************************************/
 typedef enum _teIotcDeviceType
 {
-	E_DEVICE_SWITCH_LIGHT 		= 0x0001,
-	E_DEVICE_DIMMER_LIGHT		= 0x0002,
-	E_DEVICE_COLOR_LIGHT		= 0x0003,
+    E_DEVICE_SWITCH_LIGHT= 0x0001,
+    E_DEVICE_DIMMER_LIGHT= 0x0002,
+    E_DEVICE_COLOR_LIGHT= 0x0003,
 
-	E_DEVICE_SMART_PLUG			= 0x0004,
-	E_DEVICE_SENSOR_LIGHT		= 0x0005,
-	E_DEVICE_SENSOR_TEMPHUMI	= 0x0006,
-	E_DEVICE_SENSOR_BINARY		= 0x0007,
+    E_DEVICE_SMART_PLUG= 0x0004,
+    E_DEVICE_SENSOR_LIGHT= 0x0005,
+    E_DEVICE_SENSOR_TEMPHUMI= 0x0006,
+    E_DEVICE_SENSOR_BINARY= 0x0007,
 }teIotcDeviceType;
 
 typedef struct _tsDeviceSwitchLight
 {
-	bool_t 	OnOff;	
-	uint8 	u8PowerValue;
+    bool_t  OnOff;
+    uint8   u8PowerValue;
 }tsDeviceSwitchLight;
 
 typedef struct _tsDeviceDimmerLight
 {
-	bool_t 	OnOff;	
-	uint8 	u8Level;
-	uint8 	u8PowerValue;
+    bool_t  OnOff;
+    uint8   u8Level;
+    uint8   u8PowerValue;
 }tsDeviceDimmerLight;
 
 typedef struct _tsDeviceColorLight
 {
-	bool_t 	OnOff;	
-	uint8   u8Level;
-	uint32	u32HsvValue;
-	uint8 	u8PowerValue;	
+    bool_t  OnOff;
+    uint8   u8Level;
+    uint32  u32HsvValue;
+    uint8   u8PowerValue;
 }tsDeviceColorLight;
 
 typedef struct _tsDeviceSmartPlug
 {
-	bool_t 	OnOff;	
-	uint8 	u8PowerValue;	
+    bool_t  OnOff;
+    uint8   u8PowerValue;
 }tsDeviceSmartPlug;
 
 typedef struct _tsDeviceSensorLight
 {
-	uint16 	u16LightValue;	
-	uint8 	u8PowerValue;		
+    uint16  u16LightValue;
+    uint8   u8PowerValue;
 }tsDeviceSensorLight;
 
 typedef struct _tsDeviceSensorTempHumi
 {
-	bool_t 	OnOff;	
-	uint8 	u8PowerValue;
+    bool_t  OnOff;
+    uint8   u8PowerValue;
 }tsDeviceSensorTempHumi;
 
 typedef struct _tsDeviceSensorBinary
 {
-	bool_t 	Status;	
-	uint8 	u8PowerValue;
+    bool_t  Status;
+    uint8   u8PowerValue;
 }tsDeviceSensorBinary;
 
 /****************************************************************************/
