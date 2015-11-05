@@ -75,14 +75,9 @@ teIotcStatus IotcDeviceFinished()
     return E_IOTC_OK;
 }
 
-teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, tsSocketClient *psSocketClient)
+teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, int iSocketClientFd)
 {
     DBG_vPrintf(DBG_DEVICE, "IotcDeviceAdd\n");
-
-    if(NULL == psSocketClient)
-    {
-        return E_IOTC_ERROR_PARAM;
-    }
     
     pthread_mutex_lock(&sIotcDeviceHead.mutex);
     tsIotcDevice *psIotcDeviceTemp = NULL;

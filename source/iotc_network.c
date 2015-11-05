@@ -74,11 +74,12 @@ static void IotcNetworkHandleDevicesReport(void *psUser, void *pvMessage, uint16
 {
     DBG_vPrintf(DBG_NETWORK, "IotcNetworkHandleDevicesReport\n");
 
-    if(NULL == pvMessage)
+    if(NULL == pvMessage || NULL == psUser)
     {
         ERR_vPrintf(T_TRUE, "The paramer is error\n");
         return;
     }
+    int *iSocketClientFd = (int*)psUser;
     json_object *psJsonMessage = (struct json_object*)pvMessage;
     json_object *psJsonDeviceArray = NULL;
     if(NULL != (psJsonDeviceArray = json_object_object_get(psJsonMessage, paKeyDescription)))
@@ -92,9 +93,9 @@ static void IotcNetworkHandleDevicesReport(void *psUser, void *pvMessage, uint16
             sprintf(paDeviceName, "%s",json_object_get_string(json_object_object_get(psJsonDevice, paKeyDeviceName)));
             uint16 u16DeviceID = json_object_get_int(json_object_object_get(psJsonDevice, paKeyDeviceId));
             uint64 u64DeviceIndex = json_object_get_int64(json_object_object_get(psJsonDevice, paKeyDeviceIndex));
-            IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, tsSocketClient *psSocketClient)
+            if(E_IOTC_OK != IotcDeviceAdd(paDeviceName, u16DeviceID, u64DeviceIndex, *iSocketClientFd))
             {
-
+                ERR_vPrintf(T_TRUE, "IotcDeviceAdd Error\n");
             }
         }
     }

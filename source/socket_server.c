@@ -299,9 +299,9 @@ static teSocketStatus SocketServerHandleRecvMessage(int iSocketFd, tsSocketClien
     json_object *psJsonRecvMessage = NULL, *psJsonTemp = NULL;
     if (NULL != (psJsonRecvMessage = json_tokener_parse(psSocketClient->csClientData)))
     {
-        if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paSequenceNo)))
+        if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paKeySequenceNo)))
         {
-            if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paMessageType)))
+            if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paKeyMessageType)))
             {
                 u16MessageType = json_object_get_int(psJsonTemp);
             }

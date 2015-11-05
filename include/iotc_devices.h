@@ -58,7 +58,7 @@ typedef struct _tsIotc_Device
     uint64          u64DeviceIndex;
     void            *psDeviceServer;
 
-    tsSocketClient  *psSocketClient;
+    int             iSocketClientFd;
 
     struct dl_list  list;
 }tsIotcDevice;
@@ -80,7 +80,7 @@ extern tsIotcDevice sIotcDeviceHead;
 /****************************************************************************/
 teIotcStatus IotcDeviceInit();
 teIotcStatus IotcDeviceFinished();
-teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, tsSocketClient *psSocketClient);
+teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, int iSocketClientFd);
 teIotcStatus IotcDeviceRemove(tsIotcDevice *psIotcDevice);
 
 
