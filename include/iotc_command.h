@@ -58,11 +58,16 @@ typedef enum
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
-#define paSequenceNo    "SequenceNo"
-#define paMessageType   "MessageType"
+#define paKeySequenceNo    "sequence_no"
+#define paKeyMessageType   "message_type"
+#define paKeyDescription   "description"
+#define paKeyDeviceName    "device_name"
+#define paKeyDeviceId      "device_id"
+#define paKeyDeviceIndex   "device_index"
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
+
 /****************************************************************************/
 /***        Locate   Functions                                            ***/
 /****************************************************************************/

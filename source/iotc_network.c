@@ -36,7 +36,7 @@
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
-static void IotcNetworkHandleDevicesReport(void *pvMessage, uint16 u16Length);
+static void IotcNetworkHandleDevicesReport(void *psUser, void *pvMessage, uint16 u16Length);
 
 /****************************************************************************/
 /***        Exported Variables                                            ***/
@@ -70,7 +70,7 @@ teNetworkStatus IotcNetworkFinished()
 /****************************************************************************/
 /***        Locate   Functions                                            ***/
 /****************************************************************************/
-static void IotcNetworkHandleDevicesReport(void *pvMessage, uint16 u16Length)
+static void IotcNetworkHandleDevicesReport(void *psUser, void *pvMessage, uint16 u16Length)
 {
     DBG_vPrintf(DBG_NETWORK, "IotcNetworkHandleDevicesReport\n");
 
@@ -80,7 +80,24 @@ static void IotcNetworkHandleDevicesReport(void *pvMessage, uint16 u16Length)
         return;
     }
     json_object *psJsonMessage = (struct json_object*)pvMessage;
-    
+    json_object *psJsonDeviceArray = NULL;
+    if(NULL != (psJsonDeviceArray = json_object_object_get(psJsonMessage, paKeyDescription)))
+    {
+        uint8 u8DeviceNumber = json_object_array_length(psJsonDeviceArray);
+        int i = 0;
+        for(i = 0; i < u8DeviceNumber; i++)
+        {
+            json_object *psJsonDevice = json_object_array_get_idx(psJsonDeviceArray, i);
+            char paDeviceName[256];
+            sprintf(paDeviceName, "%s",json_object_get_string(json_object_object_get(psJsonDevice, paKeyDeviceName)));
+            uint16 u16DeviceID = json_object_get_int(json_object_object_get(psJsonDevice, paKeyDeviceId));
+            uint64 u64DeviceIndex = json_object_get_int64(json_object_object_get(psJsonDevice, paKeyDeviceIndex));
+            IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, tsSocketClient *psSocketClient)
+            {
+
+            }
+        }
+    }
 }
 
 /****************************************************************************/

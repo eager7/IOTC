@@ -78,7 +78,7 @@ typedef volatile enum
     E_THREAD_STOPPING, 
 }teThreadState;  
 
-typedef void (*tprSocketMessageCallback)(void *pvMessage, uint16 u16Length);
+typedef void (*tprSocketMessageCallback)(void *psUser, void *pvMessage, uint16 u16Length);
 
 typedef struct _tsSocketCallbackEntry
 {

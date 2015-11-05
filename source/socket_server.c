@@ -291,7 +291,7 @@ static void SocketClientDestory(tsSocketClient *psSocketClient)
     free(psSocketClient);
 }
 
-static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClient)
+static teSocketStatus SocketServerHandleRecvMessage(int iSocketFd, tsSocketClient *psSocketClient)
 {
     BLUE_vPrintf(DBG_SOCK, "SocketServerHandleRecvMessage\n");
     
@@ -333,7 +333,7 @@ static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClie
         {
             if (NULL != psSocketCallbackEntryTemp->prCallback)
             {                                           
-                psSocketCallbackEntryTemp->prCallback(psJsonRecvMessage, psSocketClient->iSocketDataLen); 
+                psSocketCallbackEntryTemp->prCallback(&iSocketFd, psJsonRecvMessage, psSocketClient->iSocketDataLen); 
                 u8Handle = 1;
             }
         }
@@ -353,7 +353,7 @@ static void *SocketClientDataHandleThread(void *arg)
 
     tsSocketClient *psSocketClientThread = (tsSocketClient*)arg;
     
-    SocketServerHandleRecvMessage(psSocketClientThread);
+    SocketServerHandleRecvMessage(psSocketClientThread->iSocketFd, psSocketClientThread);
     free(psSocketClientThread);
     
     DBG_vPrintf(DBG_SOCK, "Exit SocketClientDataHandleThread\n");
