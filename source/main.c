@@ -22,7 +22,11 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <signal.h>
-#include <libdaemon/daemon.h>
+#include <syslog.h>
+#include <fcntl.h>
+#include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "utils.h"
 #include "socket_server.h"
@@ -45,132 +49,74 @@ volatile sig_atomic_t bRunning = 1;/** Main loop running flag */
 /****************************************************************************/
 static void vQuitSignalHandler (int sig);
 static void print_usage_exit(char *argv[]);
+static void daemonize_init(const char *cmd);
 
 /****************************************************************************/
 /***        Locate   Functions                                            ***/
 /****************************************************************************/
 int main(int argc, char *argv[])
 {
-	printf("Start IOTC Daemon Program...\n");
-	
-	static struct option long_options[] =
-	{
-		{"help",                    no_argument,        NULL, 'h'},
-		{"verbosity",               required_argument,  NULL, 'v'},
+    printf("Start IOTC Daemon Program...\n");
+
+    static struct option long_options[] =
+    {
+        {"help",                    no_argument,        NULL, 'h'},
+        {"verbosity",               required_argument,  NULL, 'v'},
         {"foreground",              no_argument,        NULL, 'f'},
-		{ NULL, 0, NULL, 0}
-	};
-	
-	signed char opt = 0;
-	int option_index = 0;
-	int daemonize = 1;
-	while ((opt = getopt_long(argc, argv, "s:hfv:B:I:P:m:nc:p:6:", long_options, &option_index)) != -1) 
-	{
-		switch (opt) 
-		{
-			case 'h':
-				print_usage_exit(argv);
-				break;
-			case 'f':
-				daemonize = 0;
-				break;
-			case 'v':
-				verbosity = atoi(optarg);
-				break;
-			case 0:
-				break;
-			default: /* '?' */
-				print_usage_exit(argv);
-		}
-	}	
-	daemon_log_ident = daemon_ident_from_argv0(argv[0]);/* Log everything into syslog */
+        { NULL, 0, NULL, 0}
+    };
 
-    if (daemonize)
+    signed char opt = 0;
+    int option_index = 0;
+    int daemonize = 1;
+    while ((opt = getopt_long(argc, argv, "s:hfv:B:I:P:m:nc:p:6:", long_options, &option_index)) != -1) 
     {
-        /* Prepare for return value passing from the initialization procedure of the daemon process */
-        if (daemon_retval_init() < 0) {
-            daemon_log(LOG_ERR, "Failed to create pipe.");
-            return 1;
-        }
-
-		pid_t pid;
-        if ((pid = daemon_fork()) < 0)/* Do the fork */
-        {          
-            daemon_log(LOG_ERR, "Failed to fork() daemon process.");/* Exit on error */
-            daemon_retval_done();
-            return 1;
-        } 
-        else if (pid)/* The parent */
-        { 
-            int ret;
-            /* Wait for 20 seconds for the return value passed from the daemon process */
-            if ((ret = daemon_retval_wait(20)) < 0)
-            {
-                daemon_log(LOG_ERR, "Could not recieve return value from daemon process: %s", strerror(errno));
-                return 255;
-            }
-			
-            if (ret == 0)
-            {
-                daemon_log(LOG_INFO, "Daemon process started.");
-            }
-            else
-            {
-                daemon_log(LOG_ERR, "Daemon returned %i.", ret);
-            }
-            return ret;
-        } 
-        else/* The daemon */
-        { 
-            if (daemon_close_all(-1) < 0)/* Close FDs */
-            {
-                daemon_log(LOG_ERR, "Failed to close all file descriptors: %s", strerror(errno));
-                daemon_retval_send(1);/* Send the error condition to the parent process */
-                goto finish;
-            }
-            daemon_log_use = DAEMON_LOG_SYSLOG;
-            daemon_retval_send(0);/* Send OK to parent process */
-            daemon_log(LOG_INFO, "Daemon started");
-        }
-    }
-    else/* Running foreground - set verbosity */
-    {
-        if ((verbosity != LOG_INFO) && (verbosity != LOG_NOTICE))
+        switch (opt) 
         {
-            if (verbosity > LOG_DEBUG)/*LOG_DEBUG = 7*/
-            {
-                daemon_set_verbosity(LOG_DEBUG);
-            }
-            else
-            {
-                daemon_set_verbosity(verbosity);
-            }
+            case 'h':
+                print_usage_exit(argv);
+            break;
+            case 'f':
+                daemonize = 0;
+            break;
+            case 'v':
+                verbosity = atoi(optarg);
+            break;
+            case 0:
+            break;
+            default: /* '?' */
+                print_usage_exit(argv);
         }
     }
-	    
-    signal(SIGTERM, vQuitSignalHandler);/* Install signal handlers */
-    signal(SIGINT,  vQuitSignalHandler);		
-	
-	if ((SocketServerInit(PORT_SOCKET, NULL) != E_SOCK_OK))
-	{
-		ERR_vPrintf(T_TRUE, "Init compents failed \n");
-		goto finish;
-	}
 
-	while(bRunning)
-	{
-		//Printf Device List
-		sleep(1);//dispatch thread
-	}
-	
-	SocketServerFinished();
-finish:
     if (daemonize)
-        daemon_log(LOG_INFO, "Daemon process exiting");  
-    else
-        daemon_log(LOG_INFO, "Exiting");
+    {
+        daemonize_init("iotc");
+    }
+    
+    signal(SIGTERM, vQuitSignalHandler);/* Install signal handlers */
+    signal(SIGINT,  vQuitSignalHandler);
 
-	return 0;
+    if ((SocketServerInit(PORT_SOCKET, NULL) != E_SOCK_OK))
+    {
+        ERR_vPrintf(T_TRUE, "Init compents failed \n");
+        goto finish;
+    }
+
+    while(bRunning)
+    {
+        //Printf Device List
+        sleep(1);//dispatch thread
+    }
+
+    SocketServerFinished();
+    finish:
+    if (daemonize)
+        syslog(LOG_INFO, "Daemon process exiting");  
+    else
+        syslog(LOG_INFO, "Exiting");
+
+    return 0;
 }
 
 static void print_usage_exit(char *argv[])
@@ -193,6 +139,96 @@ static void vQuitSignalHandler (int sig)
     DBG_vPrintf(DBG_MAIN, "Got signal %d\n", sig); 
     bRunning = 0;
     SocketServerFinished();
-	exit(0);
+    exit(0);
     return;
 }
+
+static void daemonize_init(const char *cmd)
+{
+    int i, fd0, fd1, fd2;
+    pid_t pid;
+    struct rlimit rl;
+    struct sigaction sa;
+    /*
+    * Clear file creation mask.
+    */
+    umask(0);
+    /*
+    * Get maximum number of file descriptors.
+    */
+    if (getrlimit(RLIMIT_NOFILE, &rl) < 0)
+    {
+        printf("%s: can't get file limit", cmd);
+        exit(-1);
+    }
+    /*
+    * Become a session leader to lose controlling TTY.
+    */
+    if ((pid = fork()) < 0)
+    {
+        printf("%s: can't fork", cmd);
+        exit(-1);
+    }
+    else if (pid != 0) /* parent */
+    {
+        exit(0);
+    }
+
+    setsid();
+    /*
+    * Ensure future opens won't allocate controlling TTYs.
+    */
+    sa.sa_handler = SIG_IGN;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGHUP, &sa, NULL) < 0)
+    {
+        printf("%s: can't ignore SIGHUP", cmd);
+        exit(-1);
+    }
+    if ((pid = fork()) < 0)
+    {
+        printf("%s: can't fork", cmd);
+        exit(-1);
+    }
+    else if (pid != 0) /* parent */
+    {
+        exit(0);
+    }
+    /*
+    * Change the current working directory to the root so
+    * we won't prevent file systems from being unmounted.
+    */
+    if (chdir("/") < 0)
+    {
+        printf("%s: can,t change directory to /", cmd);
+        exit(-1);
+    }
+    /*
+    * Close all open file descriptors.
+    */
+    if (rl.rlim_max == RLIM_INFINITY)
+    {
+        rl.rlim_max = 1024;
+    }
+    for (i = 0; i < rl.rlim_max; i++)
+    {
+        close(i);
+    }
+    /*
+    * Attach file descriptors 0, 1, and 2 to /dev/null.
+    */
+    fd0 = open("/dev/null", O_RDWR);
+    fd1 = dup(0);
+    fd2 = dup(0);
+    /*
+    * Initialize the log file.
+    */
+    openlog(cmd, LOG_CONS, LOG_DAEMON);
+    if (fd0 != 0 || fd1 != 1 || fd2 != 2) 
+    {
+        syslog(LOG_ERR, "unexpected file descriptors %d %d %d",fd0, fd1, fd2);
+        exit(1);
+    }
+}
+
