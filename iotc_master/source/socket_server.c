@@ -298,11 +298,26 @@ tsSocketClient* SocketClientNew()
 static void SocketClientDestory(tsSocketClient *psSocketClient)
 {
     close(psSocketClient->iSocketFd);
+    //Remove The Devices detch This Socket
+    tsSocketCallbackEntry *psSocketCallbackEntryTemp = NULL;
+    dl_list_for_each(psSocketCallbackEntryTemp, &sSocketServer.sSocketCallbacks.sCallListHead.list, tsSocketCallbackEntry, list)
+    {
+        if (psSocketCallbackEntryTemp->u16Type == E_COMMAND_SOCKET_DISCONNECT)
+        {
+            if (NULL != psSocketCallbackEntryTemp->prCallback)
+            {                                           
+                psSocketCallbackEntryTemp->prCallback(&psSocketClient->iSocketFd, NULL, 0); 
+            }
+        }
+    }
+    
     dl_list_del(&psSocketClient->list);
     pthread_mutex_destroy(&psSocketClient->mutex);
     pthread_mutex_destroy(&psSocketClient->mutex_cond);
     pthread_cond_destroy(&psSocketClient->cond_message_receive);
     free(psSocketClient);
+
+    
 }
 
 static teSocketStatus SocketServerHandleRecvMessage(int iSocketFd, tsSocketClient *psSocketClient)

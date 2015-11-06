@@ -37,6 +37,7 @@
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
 static void IotcNetworkHandleDevicesReport(void *psUser, void *pvMessage, uint16 u16Length);
+static void IotcNetworkHandleSocketDisconnect(void *psUser, void *pvMessage, uint16 u16Length);
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
@@ -54,6 +55,7 @@ teNetworkStatus IotcNetworkInit()
 
     IotcDeviceInit();    
     SocketCallBackListenerAdd(E_COMMAND_DEVICES_REPORT, IotcNetworkHandleDevicesReport);    
+    SocketCallBackListenerAdd(E_COMMAND_SOCKET_DISCONNECT, IotcNetworkHandleSocketDisconnect);    
     return E_NETWORK_OK;
 }
 
@@ -78,7 +80,7 @@ static void IotcNetworkHandleDevicesReport(void *psUser, void *pvMessage, uint16
         ERR_vPrintf(T_TRUE, "The paramer is error\n");
         return;
     }
-    int *iSocketClientFd = (int*)psUser;
+    int iSocketClientFd = *((int*)psUser);
     json_object *psJsonMessage = (struct json_object*)pvMessage;
     json_object *psJsonDeviceArray = NULL;
     if(NULL != (psJsonDeviceArray = json_object_object_get(psJsonMessage, paKeyDescription)))
@@ -92,13 +94,27 @@ static void IotcNetworkHandleDevicesReport(void *psUser, void *pvMessage, uint16
             sprintf(paDeviceName, "%s",json_object_get_string(json_object_object_get(psJsonDevice, paKeyDeviceName)));
             uint16 u16DeviceID = json_object_get_int(json_object_object_get(psJsonDevice, paKeyDeviceId));
             uint64 u64DeviceIndex = json_object_get_int64(json_object_object_get(psJsonDevice, paKeyDeviceIndex));
-            if(E_IOTC_OK != IotcDeviceAdd(paDeviceName, u16DeviceID, u64DeviceIndex, *iSocketClientFd))
+            if(E_IOTC_OK != IotcDeviceAdd(paDeviceName, u16DeviceID, u64DeviceIndex, iSocketClientFd))
             {
                 ERR_vPrintf(T_TRUE, "IotcDeviceAdd Error, Maybe exist...\n");
             }
         }
     }
 }
+
+static void IotcNetworkHandleSocketDisconnect(void *psUser, void *pvMessage, uint16 u16Length)
+{
+    DBG_vPrintf(DBG_NETWORK, "IotcNetworkHandleSocketDisconnect\n");
+
+    if(NULL == psUser)
+    {
+        ERR_vPrintf(T_TRUE, "The paramer is error\n");
+        return;
+    }
+    //int iSocketClientFd = *((int*)psUser);
+
+}
+
 
 /****************************************************************************/
 /***        End           file                                            ***/
