@@ -6,13 +6,13 @@
  *
  * REVISION:           $Revision:  0$
  *
- * DATED:              $Date: 2015-10-21 15:13:17 +0100 (Thu, 21 Oct 2015 $
+ * DATED:              $Date: 2015-11-06 15:13:17 +0100 (Thu, 21 Oct 2015 $
  *
  * AUTHOR:             Abel
  *
  ****************************************************************************
  *
- * Copyright panchangtao@gmail.com B.V. 2015. All rights reserved
+ * Copyright IOTC Project Group 2015. All rights reserved
  *
  ***************************************************************************/
 
@@ -35,34 +35,13 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 
-
+#include "utils.h"
+#include "list.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
-#define PORT 7788
-#define BUFSIZE	2048
-#define EPOLL_EVENT_NUM  10
+
  
-#define UI_BLUE(x)      "\e[34;1m"x"\e[0m"
-#define UI_RED(x)       "\e[31;1m"x"\e[0m"
-
-typedef enum
-{
-	E_OK = 0,
-	E_ERROR,
-}eRetStatus;
-
-typedef enum
-{
-    T_FALSE = 0,
-    T_TRUE  = 1,
-}bool_t;
-
-
-#define BLUE_vPrintf(a,b,ARGS...)   do {  if (a) {printf(UI_BLUE     ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define RED_vPrintf(a,b,ARGS...)    do {  if (a) {printf(UI_RED      ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define ERR_vPrintf RED_vPrintf
-
 
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
@@ -108,6 +87,7 @@ eRetStatus getSystemIp(char* eth, char* pIP, int len)
 
     if(ioctl(fd, SIOCGIFADDR, &ifr_ip) < 0)
     {
+    	close(fd);
         return E_ERROR;
     }
 
@@ -119,6 +99,77 @@ eRetStatus getSystemIp(char* eth, char* pIP, int len)
 
     return E_OK;
 }
+
+
+
+eRetStatus ClientSockInit(ClientSock *sock, int type, int port, char *ifname)
+{
+		
+	if((!sock)||(!ifname)){
+		ERR_vPrintf("argument error\n"); 
+        return E_ERROR;
+	}
+
+	sock->type = type;
+	sock->port = port;
+
+	sock->fd = socket(AF_INET, type, 0);//new socket
+	if(sock->fd < 0){
+		ERR_vPrintf("socket failed\n"); 
+        return E_ERROR;
+	}
+	DEB_vPrintf("socket Success\n");
+
+	/*set sock unblock*/
+	int flags;
+	flags = fcntl(sockfd, F_GETFL, 0);
+	if(flags < 0) {
+		ERR_vPrintf("fcntl get failed\n"); 
+	    goto err;     
+	}
+	if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+        ERR_vPrintf("fcntl set failed\n"); 
+        goto err;
+    }
+	DEB_vPrintf("fcntl Success\n");
+
+	/*get connect ip*/
+	eRetStatus ret;
+	memset(&(sock->addr), 0, IP_LEN);
+	ret = getSystemIp(ifname, &(sock->addr), IP_LEN);
+	if(ret != E_OK){
+		ERR_vPrintf("get system ip failed\n"); 
+		goto err;
+	}
+	DEB_vPrintf("Connect Server Success\n");
+
+
+	/*Connect*/
+	struct sockaddr_in server;
+	bzero(&server,sizeof(server));
+	server.sin_family = sock->type;
+	server.sin_port = htons(sock->port);
+	server.sin_addr.s_addr = inet_addr(&(sock->addr));
+	ret = connect(sockfd, (struct sockaddr *)&server, sizeof(server));
+	while (ret < 0) {
+		if (errno == EINPROGRESS) {
+			break;
+		} 
+		else {
+			ERR_vPrintf("connect failed\n"); 
+			goto err;
+        }
+    }
+	DEB_vPrintf("Connect Server Success\n");
+	
+	
+	return E_OK;
+
+err:	close(sock->fd);
+	return E_ERROR;
+}
+
+
 
 
 eRetStatus send_msg(int fd)
@@ -146,42 +197,19 @@ eRetStatus send_msg(int fd)
 
 int main(void)
 {
-	printf("Hello..\n");
-	int sockfd, num;    /* files descriptors */
-	struct sockaddr_in server;
-	int ret;
+	ClientSock sock;
 
-	if((sockfd=socket(AF_INET,SOCK_STREAM, 0))==-1)
-	{
-		ERR_vPrintf(T_TRUE,"socket failed, %s\n", strerror(errno)); 
+	eRetStatus ret;
+	ret = ClientSockInit(&sock, AF_INET, PORT, "eth0.2");
+	if(ret != E_OK){
+		ERR_vPrintf(T_TRUE,"socket send error!\n");
 		return -1;
 	}
 
-	int flags = fcntl(sockfd, F_GETFL, 0);
-	if(flags < 0) {
-	    return -1;      
-	}
-	if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-        perror("set socket O_NONBLOCK fail.\n");
-        return -1;
-    }
+	//creat msg send thread
+	
 
-	bzero(&server,sizeof(server));
-	server.sin_family = AF_INET;
-	server.sin_port = htons(PORT);
-	server.sin_addr.s_addr = inet_addr("127.0.0.1");
-	ret = connect(sockfd, (struct sockaddr *)&server, sizeof(server));
-	while (ret < 0) {
-		if (errno == EINPROGRESS) {
-			break;
-		} 
-		else {
-			perror("connect remote server fail.\n");
-            return -1;
-        }
-    }
-	printf("Connect Server Success\n");
-	ret = send_msg(sockfd);
+	ret = send_msg(sock.fd);
 	if(E_OK != ret)
 	{
 		ERR_vPrintf(T_TRUE,"socket send error!\n"); 
@@ -254,4 +282,19 @@ done:
 }
 
 
+
+
+int main(void)
+{
+	//init sock
+
+	//creat sock client
+
+
+	//creat timer
+
+	//epoll creat
+
+	//
+}
 
