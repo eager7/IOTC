@@ -178,7 +178,7 @@ eRetStatus send_msg(int fd)
 	//char *msg = "[{\"device_name\":\"light\",\"device_id\":1,\"device_index\":12345678},{\"device_name\":\"dimmerlight\",\"device_id\": 2,\"device_index\": 87654321}]";
 	char *msg = "{"
     "\"sequence_no\": 1,"
-    "\"message_type\": 1,"
+    "\"message_type\": 2,"
     "\"description\": [{\"device_name\":\"light\",\"device_id\":1,"
 	"\"device_index\":12345678},{\"device_name\":\"dimmerlight\","
 	"\"device_id\": 2,\"device_index\": 87654321}]}";
