@@ -138,8 +138,8 @@ typedef struct _tsSocketCondQuene
 /****************************************************************************/
 teSocketStatus SocketServerInit(int iPort, char *psNetAddress);
 teSocketStatus SocketServerFinished();
-teSocketStatus SocektClientSendMessage(int iSocketFd, char *psMessage, int iMessageLen);
-teSocketStatus SocektClientWaitMessage(int iSocketFd, char *psMessage, uint32 u32WaitTimeoutms);
+teSocketStatus SocketClientSendMessage(int iSocketFd, char *psMessage, int iMessageLen);
+teSocketStatus SocketClientWaitMessage(int iSocketFd, char *psMessage, uint32 u32WaitTimeoutms);
 teSocketStatus SocketCallBackListenerAdd(uint16 u16MessageType, tprSocketMessageCallback prSocketMessageCallback);
 
 

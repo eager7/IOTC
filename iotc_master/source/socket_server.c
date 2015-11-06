@@ -67,6 +67,7 @@ teSocketStatus SocketServerInit(int iPort, char *psNetAddress)
     dl_list_init(&sSocketServer.sSocketCallbacks.sCallListHead.list);
 
     memset(&sSocketClientHead, 0, sizeof(sSocketClientHead));
+    pthread_mutex_init(&sSocketClientHead.mutex, NULL);
     dl_list_init(&sSocketClientHead.list);
 
     teSocketStatus eSocketStatus;
@@ -107,7 +108,7 @@ teSocketStatus SocketServerFinished()
 }
 
 
-teSocketStatus SocektClientSendMessage(int iSocketFd, char *psMessage, int iMessageLen)
+teSocketStatus SocketClientSendMessage(int iSocketFd, char *psMessage, int iMessageLen)
 {
     DBG_vPrintf(DBG_SOCK, "SocektClientSendMessage\n");
     if (NULL == psMessage)
@@ -125,7 +126,7 @@ teSocketStatus SocektClientSendMessage(int iSocketFd, char *psMessage, int iMess
     return E_SOCK_OK;
 }
 
-teSocketStatus SocektClientWaitMessage(int iSocketFd, char *psMessage, uint32 u32WaitTimeoutms)
+teSocketStatus SocketClientWaitMessage(int iSocketFd, char *psMessage, uint32 u32WaitTimeoutms)
 {
     DBG_vPrintf(DBG_SOCK, "SocektClientWaitMessage\n");
     if (NULL == psMessage)
@@ -136,6 +137,7 @@ teSocketStatus SocektClientWaitMessage(int iSocketFd, char *psMessage, uint32 u3
 
     tsSocketClient *psSocketClient = NULL;
     int iFlag = 0;
+    pthread_mutex_lock(&sSocketClientHead.mutex);
     dl_list_for_each(psSocketClient, &sSocketClientHead.list, tsSocketClient, list)
     {
         if (iSocketFd == psSocketClient->iSocketFd)
@@ -144,6 +146,8 @@ teSocketStatus SocektClientWaitMessage(int iSocketFd, char *psMessage, uint32 u3
             break;
         }
     }
+    pthread_mutex_unlock(&sSocketClientHead.mutex);
+
     if (!iFlag)
     {
         return E_SOCK_DISCONNECT;
@@ -257,7 +261,7 @@ static void SocketCallBackListenerClear()
     pthread_mutex_lock(&sSocketServer.sSocketCallbacks.mutex);
     //TODO:Remove Listenser
     tsSocketCallbackEntry *psSocketCallbackEntry1, *psSocketCallbackEntry2 = NULL;
-    dl_list_for_each_safe(psSocketCallbackEntry1, psSocketCallbackEntry2, &sSocketClientHead.list, tsSocketCallbackEntry, list)
+    dl_list_for_each_safe(psSocketCallbackEntry1, psSocketCallbackEntry2, &sSocketServer.sSocketCallbacks.sCallListHead.list, tsSocketCallbackEntry, list)
     {
         dl_list_del(&psSocketCallbackEntry1->list);
         free(psSocketCallbackEntry1);
@@ -269,6 +273,7 @@ static void SocketCallBackListenerClear()
 static void SocketClientListFree()
 {
     tsSocketClient *psSocketClientTemp1, *psSocketClientTemp2 = NULL;
+    pthread_mutex_lock(&sSocketClientHead.mutex);
     dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.list, tsSocketClient, list)
     {
         dl_list_del(&psSocketClientTemp1->list);
@@ -277,6 +282,7 @@ static void SocketClientListFree()
         free(psSocketClientTemp1);
         psSocketClientTemp1 = NULL;
     }
+    pthread_mutex_unlock(&sSocketClientHead.mutex);
 }
 
 tsSocketClient* SocketClientNew()
@@ -291,7 +297,10 @@ tsSocketClient* SocketClientNew()
     pthread_mutex_init(&psSocketClientNew->mutex, NULL);
     pthread_mutex_init(&psSocketClientNew->mutex_cond, NULL);
     pthread_cond_init(&psSocketClientNew->cond_message_receive, NULL);
+
+    pthread_mutex_lock(&sSocketClientHead.mutex);
     dl_list_add_tail(&sSocketClientHead.list, &psSocketClientNew->list);
+    pthread_mutex_unlock(&sSocketClientHead.mutex);
     return psSocketClientNew;
 }
 

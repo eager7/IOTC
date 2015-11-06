@@ -318,7 +318,7 @@ static teAttStatus IotcDeviceSetDeviceAttribute(int iSocketFd, uint64 u64DeviceI
             //gettimeofday(&sNow, NULL);
             //srand((unsigned)time(NULL));
             //int iSequeneNo = rand()%10000; //Scattered all requests by used rand
-            SocektClientSendMessage(iSocketFd, (char*)json_object_get_string(psJsonMessage), strlen(json_object_get_string(psJsonMessage)));
+            SocketClientSendMessage(iSocketFd, (char*)json_object_get_string(psJsonMessage), strlen(json_object_get_string(psJsonMessage)));
         }
         break;
         case(E_ATTRIBUTE_LEVEL):
