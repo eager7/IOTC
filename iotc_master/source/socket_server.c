@@ -370,7 +370,9 @@ static teSocketStatus SocketServerHandleRecvMessage(int iSocketFd, tsSocketClien
         if (psSocketCallbackEntryTemp->u16Type == u16MessageType)
         {
             if (NULL != psSocketCallbackEntryTemp->prCallback)
-            {                                           
+            {   
+                BLUE_vPrintf(DBG_SOCK, "Invoke CallBack Fun to Handle Message\n");
+                
                 psSocketCallbackEntryTemp->prCallback(&iSocketFd, psJsonRecvMessage, psSocketClient->iSocketDataLen); 
                 u8Handle = 1;
             }
@@ -378,6 +380,7 @@ static teSocketStatus SocketServerHandleRecvMessage(int iSocketFd, tsSocketClien
     }
     if (0 == u8Handle)
     {
+        BLUE_vPrintf(DBG_SOCK, "pthread_cond_broadcast Message\n");
         pthread_cond_broadcast(&psSocketClient->cond_message_receive); 
     }
     json_object_put(psJsonRecvMessage);
