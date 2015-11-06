@@ -27,7 +27,7 @@ CFLAGS := -I./include/
 CFLAGS += -I$(SRC_NAME)/include/
 PROJ_DFLAGS := -D_REENTRANT
 PROJ_LIBS := -L./lib
-PROJ_LIBS += -ldaemon -lpthread -ljson-c -lsqlite3
+PROJ_LIBS += -lpthread -ljson-c -lsqlite3
 
 CC := gcc
 RM := -rm
