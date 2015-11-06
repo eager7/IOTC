@@ -124,7 +124,15 @@ eRetStatus getSystemIp(char* eth, char* pIP, int len)
 eRetStatus send_msg(int fd)
 {
 	int ret;
-	char *msg = "[{\"device_name\":\"light\",\"device_id\":1,\"device_index\":12345678},{\"device_name\":\"dimmerlight\",\"device_id\": 2,\"device_index\": 87654321}]";
+	//char *msg = "[{\"device_name\":\"light\",\"device_id\":1,\"device_index\":12345678},{\"device_name\":\"dimmerlight\",\"device_id\": 2,\"device_index\": 87654321}]";
+	char *msg = "{"
+    "\"sequence_no\": 1,"
+    "\"message_type\": 1,"
+    "\"description\": [{\"device_name\":\"light\",\"device_id\":1,"
+	"\"device_index\":12345678},{\"device_name\":\"dimmerlight\","
+	"\"device_id\": 2,\"device_index\": 87654321}]}";
+
+	printf("Send Msg = %s\n", msg);
 	ret = send(fd, msg, strlen(msg)+1, 0);
 	if(ret < 0){
 		perror("send error");
@@ -138,6 +146,7 @@ eRetStatus send_msg(int fd)
 
 int main(void)
 {
+	printf("Hello..\n");
 	int sockfd, num;    /* files descriptors */
 	struct sockaddr_in server;
 	int ret;
@@ -160,7 +169,7 @@ int main(void)
 	bzero(&server,sizeof(server));
 	server.sin_family = AF_INET;
 	server.sin_port = htons(PORT);
-	server.sin_addr.s_addr = inet_addr(SystemIp);
+	server.sin_addr.s_addr = inet_addr("127.0.0.1");
 	ret = connect(sockfd, (struct sockaddr *)&server, sizeof(server));
 	while (ret < 0) {
 		if (errno == EINPROGRESS) {
@@ -171,18 +180,25 @@ int main(void)
             return -1;
         }
     }
+	printf("Connect Server Success\n");
+	ret = send_msg(sockfd);
+	if(E_OK != ret)
+	{
+		ERR_vPrintf(T_TRUE,"socket send error!\n"); 
+		return -1;
+	}
 
 	//creat timer
 	//pthread_mutex_init(&mutex, NULL);
 	signal(SIGALRM, signalHandler);  
 	struct itimerval timer, old_timer;
 
-	timer.it_value.tv_sec = 0;
+	timer.it_value.tv_sec = 10;
 	timer.it_value.tv_usec = 1000;
 	timer.it_interval.tv_sec = 5;
 	timer.it_interval.tv_usec = 0;
 
-	setitimer(ITIMER_REAL, &timer, &old_timer);
+	//setitimer(ITIMER_REAL, &timer, &old_timer);
 
 	int epollfd;
 
@@ -195,13 +211,13 @@ int main(void)
 
 	ret = epoll_ctl(epollfd,EPOLL_CTL_ADD, sockfd, &ev);
 	if(ret < 0){
-		perror("epoll_ctl failed.\n");
+		perror("epoll_ctl failed ");
 		goto done;
 	}
 
 	
 	int iEpollRet;
-		
+	printf("Enter epoll Wait...\n");	
 	while(1){
 		iEpollRet = epoll_wait(epollfd, &ev, EPOLL_EVENT_NUM, -1);
 		if(iEpollRet == 0){//epoll_wait or timeout
@@ -209,11 +225,13 @@ int main(void)
 			goto done;
 		}
 		else if(iEpollRet == -1){//error
-			perror("epoll_ctl failed.\n");
+			perror("epoll_wait failed ");
+			//if(errno == EAGAIN)
 			goto done;
 		}else{
-			if((ev.events & EPOLLERR) || (ev.events & EPOLLHUP) || (!(ev.events & EPOLLIN))){
+			if((ev.events & EPOLLERR) || (ev.events & EPOLLHUP)){
 				//close socket
+				printf("Socket Disconnected.. C\n");
 				goto done;
 			}
 			else{
@@ -221,19 +239,11 @@ int main(void)
 				memset(buf, 0, BUFSIZE);
 				recv(sockfd, buf, BUFSIZE, 0);
 				BLUE_vPrintf(T_TRUE,"Recv Msg:%s\n", buf);
-				continue;
+				//continue;
 			}
 		}
 
 		//send event
-		if(flag){
-			flag = 0;
-			ret = send_msg(sockfd);
-			if(E_OK != ret){
-				ERR_vPrintf(T_TRUE,"socket send error!\n"); 
-				return -1;
-			}
-		}
 		
 	}
 done:
