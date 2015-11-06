@@ -30,6 +30,8 @@
 
 #include "utils.h"
 #include "socket_server.h"
+#include "iotc_network.h"
+#include "iotc_devices.h"
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
@@ -97,7 +99,7 @@ int main(int argc, char *argv[])
     signal(SIGTERM, vQuitSignalHandler);/* Install signal handlers */
     signal(SIGINT,  vQuitSignalHandler);
 
-    if ((SocketServerInit(PORT_SOCKET, NULL) != E_SOCK_OK))
+    if ((SocketServerInit(PORT_SOCKET, NULL) != E_SOCK_OK) || (IotcNetworkInit() != E_NETWORK_OK))
     {
         ERR_vPrintf(T_TRUE, "Init compents failed \n");
         goto finish;
@@ -106,10 +108,20 @@ int main(int argc, char *argv[])
     while(bRunning)
     {
         //Printf Device List
-        sleep(1);//dispatch thread
+        PURPLE_vPrintf(DBG_MAIN, "Display The Devices List...\n");
+        pthread_mutex_lock(&sIotcDeviceHead.mutex);
+        tsIotcDevice *psIotcDeviceTemp = NULL;
+        dl_list_for_each(psIotcDeviceTemp, &sIotcDeviceHead.list, tsIotcDevice, list)
+        {
+            DBG_vPrintf(DBG_MAIN, "The Device Index is 0x%016llx\n", psIotcDeviceTemp->u64DeviceIndex);
+        }
+        pthread_mutex_unlock(&sIotcDeviceHead.mutex);
+        
+        sleep(3);//dispatch thread
     }
 
     SocketServerFinished();
+    IotcNetworkFinished();
     finish:
     if (daemonize)
         syslog(LOG_INFO, "Daemon process exiting");  
@@ -139,6 +151,7 @@ static void vQuitSignalHandler (int sig)
     DBG_vPrintf(DBG_MAIN, "Got signal %d\n", sig); 
     bRunning = 0;
     SocketServerFinished();
+    IotcNetworkFinished();
     exit(0);
     return;
 }

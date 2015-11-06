@@ -44,14 +44,14 @@ extern "C"{
 #define UI_WHITE(x)     "\e[37;1m"x"\e[0m"
 
 #define DBG_vPrintf(a,b,ARGS...)    do {  if (a) printf(b, ## ARGS);} while(0)
-#define BLACK_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_BLACK    ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define RED_vPrintf(a,b,ARGS...)    do {  if (a) {printf(UI_RED      ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define GREEN_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_GREEN    ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define YELLOW_vPrintf(a,b,ARGS...) do {  if (a) {printf(UI_YELLOW   ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define BLUE_vPrintf(a,b,ARGS...)   do {  if (a) {printf(UI_BLUE     ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define PURPLE_vPrintf(a,b,ARGS...) do {  if (a) {printf(UI_PURPLE   ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define CYAN_vPrintf(a,b,ARGS...)   do {  if (a) {printf(UI_CYAN     ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define WHITE_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_WHITE    ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
+#define BLACK_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_BLACK    ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
+#define RED_vPrintf(a,b,ARGS...)    do {  if (a) {printf(UI_RED      ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
+#define GREEN_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_GREEN    ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
+#define YELLOW_vPrintf(a,b,ARGS...) do {  if (a) {printf(UI_YELLOW   ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
+#define BLUE_vPrintf(a,b,ARGS...)   do {  if (a) {printf(UI_BLUE     ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
+#define PURPLE_vPrintf(a,b,ARGS...) do {  if (a) {printf(UI_PURPLE   ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
+#define CYAN_vPrintf(a,b,ARGS...)   do {  if (a) {printf(UI_CYAN     ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
+#define WHITE_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_WHITE    ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
 
 #define ERR_vPrintf RED_vPrintf
 
