@@ -124,7 +124,8 @@ typedef struct _tsSocketEvent
 
 typedef struct _tsSocketEventQuene
 {
-    volatile sig_atomic_t           flag;
+    volatile sig_atomic_t           flag_app;
+    volatile sig_atomic_t           flag_device;
     pthread_mutex_t                 mutex;
     pthread_cond_t                  cond_data_recv;
 

@@ -204,15 +204,15 @@ static void *IotcNetworkHandleThread(void *arg)
     while(sIotcNetwork.eThreadState)
     {
         pthread_mutex_lock(&sSocketEventQuene.mutex);
-        while (!sSocketEventQuene.flag)
+        while (!sSocketEventQuene.flag_device)
         {
             GREEN_vPrintf(DBG_NETWORK, "pthread_cond_waiting ...\n");
             pthread_cond_wait(&sSocketEventQuene.cond_data_recv, &sSocketEventQuene.mutex);
         }
+        sSocketEventQuene.flag_device = T_FALSE;
         pthread_mutex_unlock(&sSocketEventQuene.mutex);
 
         GREEN_vPrintf(DBG_NETWORK, "pthread_cond_waited [%d]...\n", sSocketEventQuene.sSocketEvent.eSocketCondEvent);
-        sSocketEventQuene.flag = T_FALSE;
         if(E_IOTC_EVENT_DEVICE != sSocketEventQuene.sSocketEvent.eSocketCondEvent)
         {
             DBG_vPrintf(DBG_NETWORK, "This Event is not A Device Event, Push it Again\n");

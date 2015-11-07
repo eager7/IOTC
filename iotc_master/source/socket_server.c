@@ -67,7 +67,8 @@ teSocketStatus SocketServerInit(int iPort, char *psNetAddress)
     memset(&sSocketServer, 0, sizeof(tsSocketServer));
 
     memset(&sSocketEventQuene, 0, sizeof(tsSocketEventQuene));
-    sSocketEventQuene.flag =  T_FALSE;
+    sSocketEventQuene.flag_app =  T_FALSE;
+    sSocketEventQuene.flag_device =  T_FALSE;
     pthread_mutex_init(&sSocketEventQuene.mutex, NULL);
     pthread_cond_init(&sSocketEventQuene.cond_data_recv, NULL);
     
@@ -233,12 +234,14 @@ static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClie
                 case (E_IOTC_EVENT_DEVICE):
                 {
                     sSocketEventQuene.sSocketEvent.eSocketCondEvent = E_IOTC_EVENT_DEVICE;
+                    sSocketEventQuene.flag_device = T_TRUE;
                 }
                 break;
                 
                 case (E_IOTC_EVENT_APP):
                 {
                     sSocketEventQuene.sSocketEvent.eSocketCondEvent = E_IOTC_EVENT_APP;
+                    sSocketEventQuene.flag_app = T_TRUE;
                 }
                 break;
                 
@@ -253,7 +256,6 @@ static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClie
             
             BLUE_vPrintf(DBG_SOCK, "pthread_cond_broadcast Message\n");
 
-            sSocketEventQuene.flag = T_TRUE;
             pthread_cond_broadcast(&sSocketEventQuene.cond_data_recv); 
         }
         else
