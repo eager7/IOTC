@@ -137,6 +137,14 @@ static void IotcNetworkHandleSocketDisconnect(void *psUser, void *pvMessage, uin
 
 static teNetworkStatus IotcNetWorkHandleRecvMessage(int iSocketFd, char *paMessage)
 {
+    DBG_vPrintf(DBG_NETWORK, "IotcNetWorkHandleRecvMessage\n");
+
+    if(NULL == paMessage)
+    {
+        ERR_vPrintf(T_TRUE, "The paramer is error\n");
+    }
+    DBG_vPrintf(DBG_NETWORK, "%s\n", paMessage);
+    
     uint16 u16MessageType = 0;
     json_object *psJsonRecvMessage = NULL, *psJsonTemp = NULL;
     if (NULL != (psJsonRecvMessage = json_tokener_parse(paMessage)))
@@ -203,11 +211,13 @@ static void *IotcNetworkHandleThread(void *arg)
         }
         pthread_mutex_unlock(&sSocketEventQuene.mutex);
 
-        GREEN_vPrintf(DBG_NETWORK, "pthread_cond_waited ...\n");
+        GREEN_vPrintf(DBG_NETWORK, "pthread_cond_waited [%d]...\n", sSocketEventQuene.sSocketEvent.eSocketCondEvent);
+        sSocketEventQuene.flag = T_FALSE;
         if(E_IOTC_EVENT_DEVICE != sSocketEventQuene.sSocketEvent.eSocketCondEvent)
         {
             DBG_vPrintf(DBG_NETWORK, "This Event is not A Device Event, Push it Again\n");
             pthread_cond_broadcast(&sSocketEventQuene.cond_data_recv); 
+            sleep(3);
             continue;
         }
         
@@ -218,6 +228,8 @@ static void *IotcNetworkHandleThread(void *arg)
             ERR_vPrintf(T_TRUE, "Can't Malloc Memory\n");
             goto done;
         }
+        memcpy(paEventBuffer, sSocketEventQuene.sSocketEvent.uCondData.sSocketData.paSocketData, 
+                            sSocketEventQuene.sSocketEvent.uCondData.sSocketData.iSocketDataLen);
         IotcNetWorkHandleRecvMessage(iSocketFd, paEventBuffer);
         free(paEventBuffer);
         
