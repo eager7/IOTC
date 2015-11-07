@@ -48,6 +48,11 @@ typedef enum
     E_COMMAND_SOCKET_DISCONNECT             = 0x0004,
 }teIotcCommand;
 
+typedef enum
+{
+    E_IOTC_EVENT_DEVICE,
+    E_IOTC_EVENT_APP,
+}teIotcEvnetType;
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
@@ -59,13 +64,14 @@ typedef enum
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
-#define paKeySequenceNo    "sequence_no"
-#define paKeyMessageType   "message_type"
-#define paKeyDescription   "description"
-#define paKeyDeviceName    "device_name"
-#define paKeyDeviceId      "device_id"
-#define paKeyDeviceIndex   "device_index"
-#define paKeyDeviceOnOff "onoff"
+#define paKeySequenceNo     "sequence_no"
+#define paKeyEventType      "event_type"
+#define paKeyMessageType    "message_type"
+#define paKeyDescription    "description"
+#define paKeyDeviceName     "device_name"
+#define paKeyDeviceId       "device_id"
+#define paKeyDeviceIndex    "device_index"
+#define paKeyDeviceOnOff    "onoff"
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/

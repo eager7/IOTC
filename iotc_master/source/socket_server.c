@@ -43,16 +43,15 @@
 /****************************************************************************/
 static void *SocketServerHandleThread(void *arg);
 static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress);
-static void SocketCallBackListenerClear();
 static void SocketClientListFree();
-static void *SocketClientDataHandleThread(void *arg);
 
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
 static tsSocketServer sSocketServer;
-static tsSocketClient sSocketClientHead;
+static tsSocketClientHead sSocketClientHead;
 
+tsSocketEventQuene sSocketEventQuene;
 
 /****************************************************************************/
 /***        Exported Functions                                            ***/
@@ -60,15 +59,21 @@ static tsSocketClient sSocketClientHead;
 teSocketStatus SocketServerInit(int iPort, char *psNetAddress)
 {
     BLUE_vPrintf(DBG_SOCK, "SocketServerInit\n");
+    pthread_mutexattr_t     attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
 
     signal(SIGPIPE, SIG_IGN);//ingnore signal interference
-    memset(&sSocketServer, 0, sizeof(sSocketServer));
-    pthread_mutex_init(&sSocketServer.sSocketCallbacks.mutex, NULL);
-    dl_list_init(&sSocketServer.sSocketCallbacks.sCallListHead.list);
+    memset(&sSocketServer, 0, sizeof(tsSocketServer));
 
-    memset(&sSocketClientHead, 0, sizeof(sSocketClientHead));
-    pthread_mutex_init(&sSocketClientHead.mutex, NULL);
-    dl_list_init(&sSocketClientHead.list);
+    memset(&sSocketEventQuene, 0, sizeof(tsSocketEventQuene));
+    sSocketEventQuene.flag =  T_FALSE;
+    pthread_mutex_init(&sSocketEventQuene.mutex, NULL);
+    pthread_cond_init(&sSocketEventQuene.cond_data_recv, NULL);
+    
+    memset(&sSocketClientHead, 0, sizeof(tsSocketClientHead));
+    pthread_mutex_init(&sSocketClientHead.mutex, &attr);
+    dl_list_init(&sSocketClientHead.sSocketClient.list);
 
     teSocketStatus eSocketStatus;
     if(E_SOCK_OK != (eSocketStatus = SocketInitSocket(iPort, psNetAddress)))
@@ -98,11 +103,9 @@ teSocketStatus SocketServerFinished()
         ERR_vPrintf(T_TRUE,"phread_join socket failed, %s\n", strerror(errno));  
         return E_SOCK_ERROR_JOIN;
     }
-    SocketCallBackListenerClear();
-    pthread_mutex_destroy(&sSocketServer.sSocketCallbacks.mutex);
-
-    SocketClientListFree();
     BLUE_vPrintf(DBG_SOCK, " SocketServerFinished %s\n", (char*)psThread_Result);
+    
+    SocketClientListFree();
 
     return E_SOCK_OK;
 }
@@ -125,90 +128,6 @@ teSocketStatus SocketClientSendMessage(int iSocketFd, char *psMessage, int iMess
 
     return E_SOCK_OK;
 }
-
-teSocketStatus SocketClientWaitMessage(int iSocketFd, char *psMessage, uint32 u32WaitTimeoutms)
-{
-    DBG_vPrintf(DBG_SOCK, "SocektClientWaitMessage\n");
-    if (NULL == psMessage)
-    {
-        ERR_vPrintf(T_TRUE, "The paramter is error\n");
-        return E_SOCK_INVALID_PARAMETER;
-    }
-
-    tsSocketClient *psSocketClient = NULL;
-    int iFlag = 0;
-    pthread_mutex_lock(&sSocketClientHead.mutex);
-    dl_list_for_each(psSocketClient, &sSocketClientHead.list, tsSocketClient, list)
-    {
-        if (iSocketFd == psSocketClient->iSocketFd)
-        {
-            iFlag = 1;
-            break;
-        }
-    }
-    pthread_mutex_unlock(&sSocketClientHead.mutex);
-
-    if (!iFlag)
-    {
-        return E_SOCK_DISCONNECT;
-    }
-    teSocketStatus eSocketStatus; 
-    pthread_mutex_lock(&psSocketClient->mutex_cond);
-    struct timeval sNow;
-    struct timespec sTimeout;
-    memset(&sNow, 0, sizeof(struct timeval));
-    gettimeofday(&sNow, NULL);
-    sTimeout.tv_sec = sNow.tv_sec + (u32WaitTimeoutms/1000);
-    sTimeout.tv_nsec = (sNow.tv_usec + ((u32WaitTimeoutms % 1000) * 1000)) * 1000;//ns
-    if (sTimeout.tv_nsec > 1000000000)
-    {
-        sTimeout.tv_sec++;
-        sTimeout.tv_nsec -= 1000000000;
-    }
-    switch (pthread_cond_timedwait(&psSocketClient->cond_message_receive, &psSocketClient->mutex_cond, &sTimeout))
-    {
-        case (E_WAIT_OK):
-            DBG_vPrintf(DBG_SOCK, "Got message type\n");
-            pthread_mutex_lock(&psSocketClient->mutex);
-            //Copy Data
-            memcpy(psMessage, psSocketClient->csClientData, psSocketClient->iSocketDataLen);
-            pthread_mutex_unlock(&psSocketClient->mutex);
-            eSocketStatus = E_SOCK_OK;
-            break;
-        case (E_WAIT_TIMEOUT):
-            ERR_vPrintf(T_TRUE, "Timed out for wait message \n");
-            eSocketStatus = E_SOCK_NO_MESSAGE;
-            break;
-        
-        default:
-            DBG_vPrintf(DBG_SOCK, "Reset queue for next user\n");
-            eSocketStatus = E_SOCK_ERROR;
-            break;
-    }    
-    pthread_mutex_unlock(&psSocketClient->mutex_cond);
-    return E_SOCK_OK;
-}
-
-teSocketStatus SocketCallBackListenerAdd(uint16 u16MessageType, tprSocketMessageCallback prSocketMessageCallback)
-{
-    DBG_vPrintf(DBG_SOCK, "SocketCallBackListerAdd\n");
-
-    pthread_mutex_lock(&sSocketServer.sSocketCallbacks.mutex);
-    //TODO:Add Listenser
-    tsSocketCallbackEntry *psSocketCallbackEntryNew = (tsSocketCallbackEntry*)malloc(sizeof(tsSocketCallbackEntry));
-    if(NULL == psSocketCallbackEntryNew)
-    {
-        ERR_vPrintf(T_TRUE, "Can't malloc memory %s\n", strerror(errno));
-        return E_SOCK_ERROR;
-    }
-    psSocketCallbackEntryNew->u16Type = u16MessageType;
-    psSocketCallbackEntryNew->prCallback = prSocketMessageCallback;
-    dl_list_add_tail(&sSocketServer.sSocketCallbacks.sCallListHead.list, &psSocketCallbackEntryNew->list);
-    pthread_mutex_unlock(&sSocketServer.sSocketCallbacks.mutex);
-    
-    return E_SOCK_OK;
-}
-
 
 /****************************************************************************/
 /***        Local    Functions                                            ***/
@@ -254,31 +173,13 @@ static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress)
     return E_SOCK_OK;
 }
 
-static void SocketCallBackListenerClear()
-{
-    DBG_vPrintf(DBG_SOCK, "SocketCallBackListerAdd\n");
-
-    pthread_mutex_lock(&sSocketServer.sSocketCallbacks.mutex);
-    //TODO:Remove Listenser
-    tsSocketCallbackEntry *psSocketCallbackEntry1, *psSocketCallbackEntry2 = NULL;
-    dl_list_for_each_safe(psSocketCallbackEntry1, psSocketCallbackEntry2, &sSocketServer.sSocketCallbacks.sCallListHead.list, tsSocketCallbackEntry, list)
-    {
-        dl_list_del(&psSocketCallbackEntry1->list);
-        free(psSocketCallbackEntry1);
-        psSocketCallbackEntry1 = NULL;
-    }
-    pthread_mutex_unlock(&sSocketServer.sSocketCallbacks.mutex);
-}
-
 static void SocketClientListFree()
 {
     tsSocketClient *psSocketClientTemp1, *psSocketClientTemp2 = NULL;
     pthread_mutex_lock(&sSocketClientHead.mutex);
-    dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.list, tsSocketClient, list)
+    dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.sSocketClient.list, tsSocketClient, list)
     {
         dl_list_del(&psSocketClientTemp1->list);
-        pthread_mutex_destroy(&psSocketClientTemp1->mutex);
-        pthread_mutex_destroy(&psSocketClientTemp1->mutex_cond);
         free(psSocketClientTemp1);
         psSocketClientTemp1 = NULL;
     }
@@ -294,61 +195,66 @@ tsSocketClient* SocketClientNew()
         exit(1);
     }
     memset(psSocketClientNew, 0, sizeof(tsSocketClient));
-    pthread_mutex_init(&psSocketClientNew->mutex, NULL);
-    pthread_mutex_init(&psSocketClientNew->mutex_cond, NULL);
-    pthread_cond_init(&psSocketClientNew->cond_message_receive, NULL);
 
     pthread_mutex_lock(&sSocketClientHead.mutex);
-    dl_list_add_tail(&sSocketClientHead.list, &psSocketClientNew->list);
+    dl_list_add_tail(&sSocketClientHead.sSocketClient.list, &psSocketClientNew->list);
     pthread_mutex_unlock(&sSocketClientHead.mutex);
     return psSocketClientNew;
 }
 
 static void SocketClientDestory(tsSocketClient *psSocketClient)
 {
-    close(psSocketClient->iSocketFd);
-    //Remove The Devices detch This Socket
-    tsSocketCallbackEntry *psSocketCallbackEntryTemp = NULL;
-    dl_list_for_each(psSocketCallbackEntryTemp, &sSocketServer.sSocketCallbacks.sCallListHead.list, tsSocketCallbackEntry, list)
-    {
-        if (psSocketCallbackEntryTemp->u16Type == E_COMMAND_SOCKET_DISCONNECT)
-        {
-            if (NULL != psSocketCallbackEntryTemp->prCallback)
-            {                                           
-                psSocketCallbackEntryTemp->prCallback(&psSocketClient->iSocketFd, NULL, 0); 
-            }
-        }
-    }
-    
+    pthread_mutex_lock(&sSocketClientHead.mutex);
     dl_list_del(&psSocketClient->list);
-    pthread_mutex_destroy(&psSocketClient->mutex);
-    pthread_mutex_destroy(&psSocketClient->mutex_cond);
-    pthread_cond_destroy(&psSocketClient->cond_message_receive);
-    free(psSocketClient);
+    pthread_mutex_unlock(&sSocketClientHead.mutex);    
 
-    
+    if(psSocketClient->iSocketFd > 0)
+    {
+        close(psSocketClient->iSocketFd);
+        //Remove The Devices detch This Socket, brocast the envet to device thread
+        //TODO:
+        free(psSocketClient);
+    }
 }
 
-static teSocketStatus SocketServerHandleRecvMessage(int iSocketFd, tsSocketClient *psSocketClient)
+static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClient)
 {
     BLUE_vPrintf(DBG_SOCK, "SocketServerHandleRecvMessage\n");
-    
-    uint16 u16MessageType = 0;
+
+    //Brodcast This Data to Other Thread
     json_object *psJsonRecvMessage = NULL, *psJsonTemp = NULL;
     if (NULL != (psJsonRecvMessage = json_tokener_parse(psSocketClient->csClientData)))
     {
-        if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paKeySequenceNo)))
+        if(NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paKeyEventType)))
         {
-            if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paKeyMessageType)))
+            int iEventType = json_object_get_int(psJsonTemp);
+            switch(iEventType)
             {
-                u16MessageType = json_object_get_int(psJsonTemp);
+                case (E_IOTC_EVENT_DEVICE):
+                {
+                    sSocketEventQuene.sSocketEvent.eSocketCondEvent = E_IOTC_EVENT_DEVICE;
+                }
+                break;
+                
+                case (E_IOTC_EVENT_APP):
+                {
+                    sSocketEventQuene.sSocketEvent.eSocketCondEvent = E_IOTC_EVENT_APP;
+                }
+                break;
+                
+                default:
+                    break;
             }
-            else
-            {
-                ERR_vPrintf(T_TRUE, "Json Format Error\n");
-                json_object_put(psJsonRecvMessage);
-                return E_SOCK_ERROR_FORMAT;
-            }
+            json_object_put(psJsonRecvMessage);
+            
+            sSocketEventQuene.sSocketEvent.uCondData.sSocketData.iSocketFd = psSocketClient->iSocketFd;
+            sSocketEventQuene.sSocketEvent.uCondData.sSocketData.iSocketDataLen = psSocketClient->iSocketDataLen;
+            memcpy(sSocketEventQuene.sSocketEvent.uCondData.sSocketData.paSocketData, psSocketClient->csClientData, psSocketClient->iSocketDataLen);
+            
+            BLUE_vPrintf(DBG_SOCK, "pthread_cond_broadcast Message\n");
+
+            sSocketEventQuene.flag = T_TRUE;
+            pthread_cond_broadcast(&sSocketEventQuene.cond_data_recv); 
         }
         else
         {
@@ -363,42 +269,7 @@ static teSocketStatus SocketServerHandleRecvMessage(int iSocketFd, tsSocketClien
         return E_SOCK_ERROR_FORMAT;
     }
 
-    uint8 u8Handle = 0;
-    tsSocketCallbackEntry *psSocketCallbackEntryTemp = NULL;
-    dl_list_for_each(psSocketCallbackEntryTemp, &sSocketServer.sSocketCallbacks.sCallListHead.list, tsSocketCallbackEntry, list)
-    {
-        if (psSocketCallbackEntryTemp->u16Type == u16MessageType)
-        {
-            if (NULL != psSocketCallbackEntryTemp->prCallback)
-            {   
-                BLUE_vPrintf(DBG_SOCK, "Invoke CallBack Fun to Handle Message\n");
-                
-                psSocketCallbackEntryTemp->prCallback(&iSocketFd, psJsonRecvMessage, psSocketClient->iSocketDataLen); 
-                u8Handle = 1;
-            }
-        }
-    }
-    if (0 == u8Handle)
-    {
-        BLUE_vPrintf(DBG_SOCK, "pthread_cond_broadcast Message\n");
-        pthread_cond_broadcast(&psSocketClient->cond_message_receive); 
-    }
-    json_object_put(psJsonRecvMessage);
-    
     return E_SOCK_OK;
-}
-
-static void *SocketClientDataHandleThread(void *arg)
-{
-    BLUE_vPrintf(DBG_SOCK, "SocketClientDataHandleThread\n");
-
-    tsSocketClient *psSocketClientThread = (tsSocketClient*)arg;
-    
-    SocketServerHandleRecvMessage(psSocketClientThread->iSocketFd, psSocketClientThread);
-    free(psSocketClientThread);
-    
-    DBG_vPrintf(DBG_SOCK, "Exit SocketClientDataHandleThread\n");
-    pthread_exit("exit");
 }
 
 static void ThreadSignalHandler(int sig)
@@ -470,7 +341,7 @@ static void *SocketServerHandleThread(void *arg)
                         else
                         {
                             YELLOW_vPrintf(DBG_SOCK, "A client[%d] Already Connected, The Number of Client is [%d]\n", 
-                                                                psSocketClientNew->iSocketFd, dl_list_len(&sSocketClientHead.list));
+                                                                psSocketClientNew->iSocketFd, dl_list_len(&sSocketClientHead.sSocketClient.list));
                             
                             sSocketServer.u8NumConnClient++;
                             EpollEvevt.data.fd = psSocketClientNew->iSocketFd;
@@ -486,23 +357,21 @@ static void *SocketServerHandleThread(void *arg)
                     }
                     else/*Client recive event or disconnect event*/
                     {
-                        if(0 == dl_list_len(&sSocketClientHead.list))
+                        if(0 == dl_list_len(&sSocketClientHead.sSocketClient.list))
                         {
                             ERR_vPrintf(T_TRUE, "There is no Client in List\n");
                             continue;
                         }
                         
                         tsSocketClient *psSocketClientTemp1, *psSocketClientTemp2 = NULL;
-                        dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.list, tsSocketClient, list)
+                        dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.sSocketClient.list, tsSocketClient, list)
                         {
                             if(EpollEventList[n].data.fd == psSocketClientTemp1->iSocketFd)
                             {
                                 /***********----------------RecvMessage-----------------************/                                
                                 BLUE_vPrintf(DBG_SOCK, "Socket Client[%d] Begin Recv Data...\n", psSocketClientTemp1->iSocketFd);
-                                pthread_mutex_lock(&psSocketClientTemp1->mutex);
                                 psSocketClientTemp1->iSocketDataLen = recv(psSocketClientTemp1->iSocketFd, 
                                     psSocketClientTemp1->csClientData, sizeof(psSocketClientTemp1->csClientData), 0);
-                                pthread_mutex_unlock(&psSocketClientTemp1->mutex);
                                 if(-1 == psSocketClientTemp1->iSocketDataLen)
                                 {
                                     ERR_vPrintf(T_TRUE, "socket recv error %s\n", strerror(errno));
@@ -527,26 +396,7 @@ static void *SocketServerHandleThread(void *arg)
                                 else    /*recv event*/
                                 {
                                     YELLOW_vPrintf(DBG_SOCK, "Recv Data is [%d]--- %s\n", psSocketClientTemp1->iSocketFd, psSocketClientTemp1->csClientData);
-                                    //Start a new thread to handle data
-                                    BLUE_vPrintf(DBG_SOCK, "pthread_create\n");
-                                    
-                                    tsSocketClient *psSocketClientThread = (tsSocketClient*)malloc(sizeof(tsSocketClient));
-                                    if(NULL == psSocketClientThread)
-                                    {
-                                        goto done;
-                                    }
-                                    memcpy(psSocketClientThread, psSocketClientTemp1, sizeof(tsSocketClient));
-                                    pthread_t pthreadHandle;
-                                    pthread_attr_t attr;
-                                    pthread_attr_init(&attr);
-                                    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-                                    if(0 != pthread_create(&pthreadHandle, &attr, SocketClientDataHandleThread, psSocketClientThread))
-                                    {
-                                        ERR_vPrintf(T_TRUE,"pthread_create failed, %s\n", strerror(errno));  
-                                        goto done;
-                                    }
-
-                                    //SocketServerHandleRecvMessage(psSocketClientTemp1);
+                                    SocketServerHandleRecvMessage(psSocketClientTemp1);
                                 }
                                 break;
                             }
@@ -562,13 +412,7 @@ static void *SocketServerHandleThread(void *arg)
 done:    
     close(iEpollFd);
     close(sSocketServer.iSocketFd);
-    tsSocketClient *psSocketClientTemp1, *psSocketClientTemp2 = NULL;
-    dl_list_for_each_safe(psSocketClientTemp1, psSocketClientTemp2, &sSocketClientHead.list, tsSocketClient, list)
-    {
-        dl_list_del(&psSocketClientTemp1->list);        
-        free(psSocketClientTemp1);
-        psSocketClientTemp1 = NULL;
-    }
+    SocketClientListFree();
     
     DBG_vPrintf(DBG_SOCK, "Exit SocketServerHandleThread\n");
     pthread_exit("Get Killed Signal");

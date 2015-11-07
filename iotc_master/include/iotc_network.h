@@ -27,9 +27,11 @@ extern "C"{
 /***        Include files                                                 ***/
 /****************************************************************************/
 #include "utils.h"
+#include "socket_server.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
+#define THREAD_NETWORK_SIGNAL SIGUSR2
 
 
 /****************************************************************************/
@@ -39,8 +41,19 @@ typedef enum
 {
     E_NETWORK_OK,
     E_NETWORK_ERROR,
+    E_NETWORK_ERROR_MALLOC,
     E_NETWORK_ERROR_PARAM,
+    E_NETWORK_ERROR_FORMAT,
+    E_NETWORK_ERROR_PTHREAD_CREATE
 }teNetworkStatus;
+
+typedef struct _tsIotcNetwork
+{
+    pthread_t                       pthIotcNetwork;  
+    teThreadState                   eThreadState;
+    //pthread_mutex_t                 mutex;
+}tsIotcNetwork;
+
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/

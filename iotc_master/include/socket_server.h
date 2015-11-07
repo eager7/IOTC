@@ -32,11 +32,11 @@ extern "C"{
 #include <netinet/in.h>
 #include "list.h"
 #include "iotc_command.h"
-
+#include <signal.h>
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
-#define SOCKET_LISTEN_NUM 10
+#define SOCKET_LISTEN_NUM 20
 #define THREAD_SIGNAL SIGUSR1
 #define EPOLL_EVENT_NUM 10
 /****************************************************************************/
@@ -79,21 +79,6 @@ typedef volatile enum
     E_THREAD_STOPPING, 
 }teThreadState;  
 
-typedef void (*tprSocketMessageCallback)(void *psUser, void *pvMessage, uint16 u16Length);
-
-typedef struct _tsSocketCallbackEntry
-{
-    uint16                          u16Type;       
-    tprSocketMessageCallback        prCallback;    
-    struct dl_list                  list;
-}tsSocketCallbackEntry;
-
-typedef struct _tsSocketCallbacks
-{
-    pthread_mutex_t                 mutex;
-    tsSocketCallbackEntry           sCallListHead;
-}tsSocketCallbacks;
-
 typedef struct _tSocketServer
 {
     int                             iSocketFd;
@@ -102,25 +87,49 @@ typedef struct _tSocketServer
     pthread_t                       pthSocketServer;
     teThreadState                   eThreadState;
     pthread_mutex_t                 mutex;
-    tsSocketCallbacks               sSocketCallbacks;
 }tsSocketServer;
 
 typedef struct _tSocektClient
 {
     int                             iSocketFd;
     struct sockaddr_in              addrclient;
-    pthread_mutex_t                 mutex;              /*Lock The Data*/
-    pthread_mutex_t                 mutex_cond;         /*Lock The Cond*/
-    pthread_cond_t                  cond_message_receive;
     int                             iSocketDataLen;
     char                            csClientData[MXBF];
     struct dl_list                  list;
 }tsSocketClient;
 
-typedef struct _tsSocketCondQuene
+typedef struct _tsSocketClientList
 {
+    tsSocketClient                  sSocketClient;
+    pthread_mutex_t                 mutex;
+}tsSocketClientHead;
+
+typedef struct _tsSocketData
+{
+    int     iSocketFd;
+    int     iSocketDataLen;
+    char    paSocketData[MXBF];
+}tsSocketData;
+
+typedef struct _tsSocketEvent
+{
+    teIotcEvnetType eSocketCondEvent;
+    union 
+    {
+        tsSocketData sSocketData;
+
+    }uCondData;
     
-}teSocketCondQuene;
+}tsSocketEvent;
+
+typedef struct _tsSocketEventQuene
+{
+    volatile sig_atomic_t           flag;
+    pthread_mutex_t                 mutex;
+    pthread_cond_t                  cond_data_recv;
+
+    tsSocketEvent                   sSocketEvent;
+}tsSocketEventQuene;
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
@@ -128,6 +137,7 @@ typedef struct _tsSocketCondQuene
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
+extern tsSocketEventQuene sSocketEventQuene;
 
 /****************************************************************************/
 /***        Local Variables                                               ***/
@@ -140,7 +150,6 @@ teSocketStatus SocketServerInit(int iPort, char *psNetAddress);
 teSocketStatus SocketServerFinished();
 teSocketStatus SocketClientSendMessage(int iSocketFd, char *psMessage, int iMessageLen);
 teSocketStatus SocketClientWaitMessage(int iSocketFd, char *psMessage, uint32 u32WaitTimeoutms);
-teSocketStatus SocketCallBackListenerAdd(uint16 u16MessageType, tprSocketMessageCallback prSocketMessageCallback);
 
 
 #if defined __cplusplus

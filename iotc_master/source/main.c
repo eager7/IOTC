@@ -150,9 +150,6 @@ static void vQuitSignalHandler (int sig)
 {
     DBG_vPrintf(DBG_MAIN, "Got signal %d\n", sig); 
     bRunning = 0;
-    SocketServerFinished();
-    IotcNetworkFinished();
-    exit(0);
     return;
 }
 
