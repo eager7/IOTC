@@ -44,8 +44,8 @@ typedef enum
 {
     E_COMMAND_DEVICES_SEARCH                = 0x0001,
     E_COMMAND_DEVICES_REPORT                = 0x0002,
-    E_COMMAND_SET_ONOFF                     = 0x0003,
-    E_COMMAND_SOCKET_DISCONNECT             = 0x0004,
+    E_COMMAND_SOCKET_DISCONNECT             = 0x0003,
+    E_COMMAND_SET_ONOFF                     = 0x0004,
 }teIotcMessageType;
 
 typedef enum
