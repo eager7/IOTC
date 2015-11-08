@@ -116,7 +116,6 @@ teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64Dev
     }
     pthread_mutex_init(&psIotcDeviceNew->mutex, NULL);    
     dl_list_add_tail(&sIotcDeviceHead.list, &psIotcDeviceNew->list);
-    
     pthread_mutex_unlock(&sIotcDeviceHead.mutex);
     
     return E_IOTC_OK;

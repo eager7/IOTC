@@ -49,7 +49,7 @@ static void *SocketClientDataHandleThread(void *arg);
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
-const char *paSocketDisconnect = "{\"sequence_no\": 1,\"message_type\": 4,\"event_type\":1,\"description\": \"\"}";
+static const char *paSocketDisconnect = "{\"sequence_no\": 1,\"message_type\": 4,\"event_type\":1,\"description\": \"\"}";
 static tsSocketServer sSocketServer;
 static tsSocketClientHead sSocketClientHead;
 
@@ -92,6 +92,7 @@ teSocketStatus SocketServerInit(int iPort, char *psNetAddress)
         ERR_vPrintf(T_TRUE,"pthread_create failed, %s\n", strerror(errno));  
         return E_SOCK_ERROR_PTHREAD_CREATE;
     }
+
     return E_SOCK_OK;
 }
 
@@ -110,7 +111,7 @@ teSocketStatus SocketServerFinished()
     BLUE_vPrintf(DBG_SOCK, " SocketServerFinished %s\n", (char*)psThread_Result);
     
     SocketClientListFree();
-
+    
     return E_SOCK_OK;
 }
 
@@ -273,17 +274,11 @@ static void *SocketClientDataHandleThread(void *arg)
     pthread_exit("exit");
 }
 
-
-static void ThreadSignalHandler(int sig)
-{
-    BLUE_vPrintf(DBG_SOCK, "ThreadSignalHandler Used To Interrupt System Call\n");
-}
-
 static void *SocketServerHandleThread(void *arg)
 {
     BLUE_vPrintf(DBG_SOCK, "SocketServerHandleThread\n");
     sSocketServer.eThreadState = E_THREAD_RUNNING;
-    signal(THREAD_SIGNAL, ThreadSignalHandler);
+    //signal(THREAD_SIGNAL, thread_signal_handler);
 
     int iEpollFd = epoll_create(65535);
     if(-1 == iEpollFd)

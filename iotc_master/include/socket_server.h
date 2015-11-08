@@ -37,7 +37,6 @@ extern "C"{
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
 #define SOCKET_LISTEN_NUM 20
-#define THREAD_SIGNAL SIGUSR1
 #define EPOLL_EVENT_NUM 10
 /****************************************************************************/
 /***        Type Definitions                                              ***/

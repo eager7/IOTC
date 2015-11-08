@@ -18,7 +18,7 @@
 
 
 #ifndef __H_IOTC_NETWORK_H_
-#define __H_UTILS__H_IOTC_NETWORK_H__H_
+#define __H_IOTC_NETWORK_H_
 
 #if defined __cplusplus
 extern "C"{

@@ -49,6 +49,7 @@ static teNetworkStatus IotcNetworkHandleSocketDisconnect(int iSocketFd, json_obj
 /***        Local Variables                                               ***/
 /****************************************************************************/
 static tsIotcNetwork sIotcNetwork;
+static const char *paThreadExit = "{\"sequence_no\": 1,\"message_type\": 4,\"event_type\":2,\"description\": \"\"}";
 
 /****************************************************************************/
 /***        Exported Functions                                            ***/
@@ -66,18 +67,29 @@ teNetworkStatus IotcNetworkInit()
         ERR_vPrintf(T_TRUE,"pthread_create failed, %s\n", strerror(errno));  
         return E_SOCK_ERROR_PTHREAD_CREATE;
     }
-    
+
     return E_NETWORK_OK;
 }
 
 teNetworkStatus IotcNetworkFinished()
 {
     DBG_vPrintf(DBG_NETWORK, "IotcNetworkFinished\n");
-
     IotcDeviceFinished(); 
     
     sIotcNetwork.eThreadState = E_THREAD_STOPPED;
-    pthread_kill(sIotcNetwork.pthIotcNetwork, THREAD_NETWORK_SIGNAL);
+    DBG_vPrintf(DBG_NETWORK, "pthread_kill\n");
+    
+    pthread_mutex_lock(&sSocketEventQuene.mutex);
+    while(!sSocketEventQuene.flag_space)
+    {
+        pthread_cond_wait(&sSocketEventQuene.cond_space_available, &sSocketEventQuene.mutex);
+    }
+    sSocketEventQuene.flag_data = T_TRUE;
+    sprintf(sSocketEventQuene.sSocketClient.csClientData, "%s", paThreadExit);
+    pthread_mutex_unlock(&sSocketEventQuene.mutex);
+    pthread_cond_broadcast(&sSocketEventQuene.cond_data_available); 
+
+    pthread_kill(sIotcNetwork.pthIotcNetwork, THREAD_SIGNAL);
     void *psThread_Result = NULL;
     if(0 != pthread_join(sIotcNetwork.pthIotcNetwork, &psThread_Result))
     {
@@ -184,25 +196,21 @@ static teNetworkStatus IotcNetWorkHandleRecvMessage(int iSocketFd, json_object *
     return E_NETWORK_OK;
 }
 
-static void ThreadSignalHandler(int sig)
-{
-    BLUE_vPrintf(DBG_NETWORK, "ThreadSignalHandler Used To Interrupt System Call\n");
-    pthread_exit(&sIotcNetwork.pthIotcNetwork);
-}
-
 static void *IotcNetworkHandleThread(void *arg)
 {
     BLUE_vPrintf(DBG_NETWORK, "IotcNetworkHandleThread\n");
     sIotcNetwork.eThreadState = E_THREAD_RUNNING;
-    signal(THREAD_NETWORK_SIGNAL, ThreadSignalHandler);
+    signal(THREAD_SIGNAL, thread_signal_handler);
 
     while(sIotcNetwork.eThreadState)
     {
+        sched_yield();
         pthread_mutex_lock(&sSocketEventQuene.mutex);
         while (!sSocketEventQuene.flag_data)
         {
             GREEN_vPrintf(DBG_NETWORK, "pthread_cond_waiting ...\n");
             pthread_cond_wait(&sSocketEventQuene.cond_data_available, &sSocketEventQuene.mutex);
+            GREEN_vPrintf(DBG_NETWORK, "pthread_cond_wait wakeup ...\n");
         }
         DBG_vPrintf(DBG_NETWORK, "The Data Recv is %s\n", sSocketEventQuene.sSocketClient.csClientData);
 
@@ -217,21 +225,28 @@ static void *IotcNetworkHandleThread(void *arg)
             }
             else
             {
-                pthread_mutex_unlock(&sSocketEventQuene.mutex);
                 ERR_vPrintf(T_TRUE, "Json Format Error\n");
                 json_object_put(psJsonRecvMessage);
                 sSocketEventQuene.flag_data  = T_FALSE;
                 sSocketEventQuene.flag_space = T_TRUE;
+                pthread_mutex_unlock(&sSocketEventQuene.mutex);
                 continue;
             }
         }
         else
         {
-            pthread_mutex_unlock(&sSocketEventQuene.mutex);
             ERR_vPrintf(T_TRUE, "Json Format Error\n");
             sSocketEventQuene.flag_data  = T_FALSE;
             sSocketEventQuene.flag_space = T_TRUE;
+            pthread_mutex_unlock(&sSocketEventQuene.mutex);
             continue;
+        }
+
+        if(E_IOTC_EVENT_EXIT == u16EventType)
+        {
+            pthread_mutex_unlock(&sSocketEventQuene.mutex);
+            json_object_put(psJsonRecvMessage);
+            goto done;
         }
 
         if(E_IOTC_EVENT_DEVICE != u16EventType)
@@ -241,7 +256,7 @@ static void *IotcNetworkHandleThread(void *arg)
             json_object_put(psJsonRecvMessage);
             continue;
         }
-
+        
         sSocketEventQuene.flag_data  = T_FALSE;
         sSocketEventQuene.flag_space = T_TRUE;
         int iSocketFd = sSocketEventQuene.sSocketClient.iSocketFd;
@@ -255,7 +270,8 @@ static void *IotcNetworkHandleThread(void *arg)
         sleep(0);
     }
 
-    DBG_vPrintf(DBG_NETWORK, "Exit SocketServerHandleThread\n");
+done:
+    DBG_vPrintf(DBG_NETWORK, "Exit IotcNetworkHandleThread\n");
     pthread_exit("Get Killed Signal");
 }
 

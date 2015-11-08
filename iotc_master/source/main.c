@@ -32,6 +32,7 @@
 #include "socket_server.h"
 #include "iotc_network.h"
 #include "iotc_devices.h"
+#include "iotc_application.h"
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
@@ -98,8 +99,11 @@ int main(int argc, char *argv[])
     
     signal(SIGTERM, vQuitSignalHandler);/* Install signal handlers */
     signal(SIGINT,  vQuitSignalHandler);
+    UtilsRegisterSignalHandler();
 
-    if ((SocketServerInit(PORT_SOCKET, NULL) != E_SOCK_OK) || (IotcNetworkInit() != E_NETWORK_OK))
+    if ((SocketServerInit(PORT_SOCKET, NULL) != E_SOCK_OK) || 
+        (IotcNetworkInit() != E_NETWORK_OK) || 
+        (IotcApplicationkInit() != E_APPLICATION_OK))
     {
         ERR_vPrintf(T_TRUE, "Init compents failed \n");
         goto finish;
@@ -123,6 +127,7 @@ int main(int argc, char *argv[])
 
     SocketServerFinished();
     IotcNetworkFinished();
+    IotcApplicationFinished();
     finish:
     if (daemonize)
         syslog(LOG_INFO, "Daemon process exiting");  

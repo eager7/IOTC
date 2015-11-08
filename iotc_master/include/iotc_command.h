@@ -52,6 +52,7 @@ typedef enum
 {
     E_IOTC_EVENT_APP,
     E_IOTC_EVENT_DEVICE,
+    E_IOTC_EVENT_EXIT,
 }teIotcEvnetType;
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/

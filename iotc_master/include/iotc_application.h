@@ -27,16 +27,32 @@ extern "C"{
 /***        Include files                                                 ***/
 /****************************************************************************/
 #include "utils.h"
-
+#include "socket_server.h"
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
-
+#define THREAD_APP_SIGNAL SIGUSR2
 
 /****************************************************************************/
 /***        Type Definitions                                              ***/
 /****************************************************************************/
+typedef enum
+{
+    E_APPLICATION_OK,
+    E_APPLICATION_ERROR,
+    E_APPLICATION_ERROR_MALLOC,
+    E_APPLICATION_ERROR_PARAM,
+    E_APPLICATION_ERROR_FORMAT,
+    E_APPLICATION_ERROR_PTHREAD_CREATE
+}teAppStatus;
+
+typedef struct _tsIotcApplication
+{
+    pthread_t                       pthIotcApp;  
+    teThreadState                   eThreadState;
+    //pthread_mutex_t                 mutex;
+}tsIotcApplication;
 
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
@@ -45,6 +61,8 @@ extern "C"{
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
+teAppStatus IotcApplicationkInit();
+teAppStatus IotcApplicationFinished();
 
 /****************************************************************************/
 /***        Local Variables                                               ***/

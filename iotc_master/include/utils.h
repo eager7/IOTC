@@ -43,7 +43,7 @@ extern "C"{
 #define UI_CYAN(x)      "\e[36;1m"x"\e[0m"
 #define UI_WHITE(x)     "\e[37;1m"x"\e[0m"
 
-#define DBG_vPrintf(a,b,ARGS...)    do {  if (a) printf(b, ## ARGS);} while(0)
+#define DBG_vPrintf(a,b,ARGS...)    do {  if (a) {printf(UI_WHITE    ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
 #define BLACK_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_BLACK    ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
 #define RED_vPrintf(a,b,ARGS...)    do {  if (a) {printf(UI_RED      ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
 #define GREEN_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_GREEN    ("[IOT_%d]") b, __LINE__, ## ARGS);} } while(0)
@@ -55,6 +55,7 @@ extern "C"{
 
 #define ERR_vPrintf RED_vPrintf
 
+#define THREAD_SIGNAL SIGUSR1
 
 #define MIBF 256
 #define MDBF 1024 
@@ -89,6 +90,9 @@ typedef enum
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
+void UtilsRegisterSignalHandler();
+void thread_signal_handler(int sig);
+
 /****************************************************************************/
 /***        Locate   Functions                                            ***/
 /****************************************************************************/
