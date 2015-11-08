@@ -105,6 +105,7 @@ teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64Dev
     
     psIotcDeviceNew->u16DeviceID = u16DeviceID;
     psIotcDeviceNew->u64DeviceIndex = u64DeviceIndex;
+    psIotcDeviceNew->iSocketClientFd = iSocketClientFd;
     psIotcDeviceNew->blDeviceOnline = T_TRUE;
 
     if(E_IOTC_OK != IotcDeviceAddService(psIotcDeviceNew, u16DeviceID, paDeviceName, u64DeviceIndex))
@@ -148,6 +149,29 @@ teIotcStatus IotcDeviceRemove(tsIotcDevice *psIotcDevice)
 
     return E_IOTC_OK;
 }
+
+teIotcStatus IotcDeviceRemoveSocket(int iSocketFd)
+{
+    DBG_vPrintf(DBG_DEVICE, "IotcDeviceRemoveSocket\n");
+        
+    pthread_mutex_lock(&sIotcDeviceHead.mutex);
+    tsIotcDevice *psIotcDeviceTemp1 = NULL, *psIotcDeviceTemp2 = NULL;
+    dl_list_for_each_safe(psIotcDeviceTemp1, psIotcDeviceTemp2, &sIotcDeviceHead.list, tsIotcDevice, list)
+    {
+        if (iSocketFd == psIotcDeviceTemp1->iSocketClientFd)
+        {
+            dl_list_del(&psIotcDeviceTemp1->list);
+            free(psIotcDeviceTemp1->psDeviceServer);
+            free(psIotcDeviceTemp1);
+            psIotcDeviceTemp1 = NULL;
+        }
+    }
+    
+    pthread_mutex_unlock(&sIotcDeviceHead.mutex);
+
+    return E_IOTC_OK;
+}
+
 /****************************************************************************/
 /***        Locate   Functions                                            ***/
 /****************************************************************************/

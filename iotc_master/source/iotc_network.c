@@ -40,7 +40,7 @@ static void *IotcNetworkHandleThread(void *arg);
 
 
 static teNetworkStatus IotcNetworkHandleDevicesReport(int iSocketFd, json_object *psJsonMessage);
-static void IotcNetworkHandleSocketDisconnect(void *psUser, void *pvMessage, uint16 u16Length);
+static teNetworkStatus IotcNetworkHandleSocketDisconnect(int iSocketFd, json_object *psJsonMessage);
 /****************************************************************************/
 /***        Exported Variables                                            ***/
 /****************************************************************************/
@@ -122,50 +122,40 @@ static teNetworkStatus IotcNetworkHandleDevicesReport(int iSocketFd, json_object
     return E_NETWORK_OK;
 }
 
-static void IotcNetworkHandleSocketDisconnect(void *psUser, void *pvMessage, uint16 u16Length)
+static teNetworkStatus IotcNetworkHandleSocketDisconnect(int iSocketFd, json_object *psJsonMessage)
 {
     DBG_vPrintf(DBG_NETWORK, "IotcNetworkHandleSocketDisconnect\n");
 
-    if(NULL == psUser)
+    if(NULL == psJsonMessage)
     {
         ERR_vPrintf(T_TRUE, "The paramer is error\n");
-        return;
+        return E_NETWORK_ERROR_PARAM;
     }
-    //int iSocketClientFd = *((int*)psUser);
+    IotcDeviceRemoveSocket(iSocketFd);
 
+    return E_NETWORK_OK;
 }
 
-static teNetworkStatus IotcNetWorkHandleRecvMessage(int iSocketFd, char *paMessage)
+static teNetworkStatus IotcNetWorkHandleRecvMessage(int iSocketFd, json_object *psJsonMessage)
 {
     DBG_vPrintf(DBG_NETWORK, "IotcNetWorkHandleRecvMessage\n");
 
-    if(NULL == paMessage)
+    if(NULL == psJsonMessage)
     {
         ERR_vPrintf(T_TRUE, "The paramer is error\n");
     }
-    DBG_vPrintf(DBG_NETWORK, "%s\n", paMessage);
     
     uint16 u16MessageType = 0;
-    json_object *psJsonRecvMessage = NULL, *psJsonTemp = NULL;
-    if (NULL != (psJsonRecvMessage = json_tokener_parse(paMessage)))
+    json_object *psJsonTemp = NULL;
+    if (NULL != (psJsonTemp = json_object_object_get(psJsonMessage, paKeySequenceNo)))
     {
-        if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paKeySequenceNo)))
+        if (NULL != (psJsonTemp = json_object_object_get(psJsonMessage, paKeyMessageType)))
         {
-            if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paKeyMessageType)))
-            {
-                u16MessageType = json_object_get_int(psJsonTemp);
-            }
-            else
-            {
-                ERR_vPrintf(T_TRUE, "Json Format Error\n");
-                json_object_put(psJsonRecvMessage);
-                return E_NETWORK_ERROR_FORMAT;
-            }
+            u16MessageType = json_object_get_int(psJsonTemp);
         }
         else
         {
             ERR_vPrintf(T_TRUE, "Json Format Error\n");
-            json_object_put(psJsonRecvMessage);
             return E_NETWORK_ERROR_FORMAT;
         }
     }
@@ -179,12 +169,18 @@ static teNetworkStatus IotcNetWorkHandleRecvMessage(int iSocketFd, char *paMessa
     {
         case(E_COMMAND_DEVICES_REPORT):
         {
-            IotcNetworkHandleDevicesReport(iSocketFd, psJsonRecvMessage);
+            IotcNetworkHandleDevicesReport(iSocketFd, psJsonMessage);
+        }
+        break;
+        case(E_COMMAND_SOCKET_DISCONNECT):
+        {
+            IotcNetworkHandleSocketDisconnect(iSocketFd, psJsonMessage);
         }
         break;
         default:
             break;
     }
+    
     return E_NETWORK_OK;
 }
 
@@ -192,7 +188,6 @@ static void ThreadSignalHandler(int sig)
 {
     BLUE_vPrintf(DBG_NETWORK, "ThreadSignalHandler Used To Interrupt System Call\n");
     pthread_exit(&sIotcNetwork.pthIotcNetwork);
-    pthread_mutex_unlock(&sSocketEventQuene.mutex);
 }
 
 static void *IotcNetworkHandleThread(void *arg)
@@ -204,39 +199,62 @@ static void *IotcNetworkHandleThread(void *arg)
     while(sIotcNetwork.eThreadState)
     {
         pthread_mutex_lock(&sSocketEventQuene.mutex);
-        while (!sSocketEventQuene.flag_device)
+        while (!sSocketEventQuene.flag_data)
         {
             GREEN_vPrintf(DBG_NETWORK, "pthread_cond_waiting ...\n");
-            pthread_cond_wait(&sSocketEventQuene.cond_data_recv, &sSocketEventQuene.mutex);
+            pthread_cond_wait(&sSocketEventQuene.cond_data_available, &sSocketEventQuene.mutex);
         }
-        sSocketEventQuene.flag_device = T_FALSE;
-        pthread_mutex_unlock(&sSocketEventQuene.mutex);
+        DBG_vPrintf(DBG_NETWORK, "The Data Recv is %s\n", sSocketEventQuene.sSocketClient.csClientData);
 
-        GREEN_vPrintf(DBG_NETWORK, "pthread_cond_waited [%d]...\n", sSocketEventQuene.sSocketEvent.eSocketCondEvent);
-        if(E_IOTC_EVENT_DEVICE != sSocketEventQuene.sSocketEvent.eSocketCondEvent)
+        uint16 u16EventType = 0;
+        json_object *psJsonRecvMessage = NULL, *psJsonTemp = NULL;
+        if (NULL != (psJsonRecvMessage = json_tokener_parse(sSocketEventQuene.sSocketClient.csClientData)))
         {
-            DBG_vPrintf(DBG_NETWORK, "This Event is not A Device Event, Push it Again\n");
-            pthread_cond_broadcast(&sSocketEventQuene.cond_data_recv); 
-            sleep(3);
+            if (NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paKeyEventType)))
+            {
+                u16EventType = json_object_get_int(psJsonTemp);
+                DBG_vPrintf(DBG_NETWORK, "This Event is %d Event\n", u16EventType);
+            }
+            else
+            {
+                pthread_mutex_unlock(&sSocketEventQuene.mutex);
+                ERR_vPrintf(T_TRUE, "Json Format Error\n");
+                json_object_put(psJsonRecvMessage);
+                sSocketEventQuene.flag_data  = T_FALSE;
+                sSocketEventQuene.flag_space = T_TRUE;
+                continue;
+            }
+        }
+        else
+        {
+            pthread_mutex_unlock(&sSocketEventQuene.mutex);
+            ERR_vPrintf(T_TRUE, "Json Format Error\n");
+            sSocketEventQuene.flag_data  = T_FALSE;
+            sSocketEventQuene.flag_space = T_TRUE;
             continue;
         }
-        
-        int iSocketFd = sSocketEventQuene.sSocketEvent.uCondData.sSocketData.iSocketFd;
-        char *paEventBuffer = (char*)malloc(sSocketEventQuene.sSocketEvent.uCondData.sSocketData.iSocketDataLen);
-        if(NULL == paEventBuffer)
+
+        if(E_IOTC_EVENT_DEVICE != u16EventType)
         {
-            ERR_vPrintf(T_TRUE, "Can't Malloc Memory\n");
-            goto done;
+            DBG_vPrintf(DBG_NETWORK, "This Event is not A Device Event, Push it Again\n");
+            pthread_mutex_unlock(&sSocketEventQuene.mutex);
+            json_object_put(psJsonRecvMessage);
+            continue;
         }
-        memcpy(paEventBuffer, sSocketEventQuene.sSocketEvent.uCondData.sSocketData.paSocketData, 
-                            sSocketEventQuene.sSocketEvent.uCondData.sSocketData.iSocketDataLen);
-        IotcNetWorkHandleRecvMessage(iSocketFd, paEventBuffer);
-        free(paEventBuffer);
+
+        sSocketEventQuene.flag_data  = T_FALSE;
+        sSocketEventQuene.flag_space = T_TRUE;
+        int iSocketFd = sSocketEventQuene.sSocketClient.iSocketFd;
+        memset(&sSocketEventQuene.sSocketClient, 0, sizeof(tsSocketClient));
+        pthread_mutex_unlock(&sSocketEventQuene.mutex);      
+        pthread_cond_broadcast(&sSocketEventQuene.cond_space_available); 
         
+        IotcNetWorkHandleRecvMessage(iSocketFd, psJsonRecvMessage);
+        
+        json_object_put(psJsonRecvMessage);
         sleep(0);
     }
 
-done:    
     DBG_vPrintf(DBG_NETWORK, "Exit SocketServerHandleThread\n");
     pthread_exit("Get Killed Signal");
 }

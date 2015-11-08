@@ -44,10 +44,12 @@
 static void *SocketServerHandleThread(void *arg);
 static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress);
 static void SocketClientListFree();
+static void *SocketClientDataHandleThread(void *arg);
 
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
+const char *paSocketDisconnect = "{\"sequence_no\": 1,\"message_type\": 4,\"event_type\":1,\"description\": \"\"}";
 static tsSocketServer sSocketServer;
 static tsSocketClientHead sSocketClientHead;
 
@@ -67,10 +69,11 @@ teSocketStatus SocketServerInit(int iPort, char *psNetAddress)
     memset(&sSocketServer, 0, sizeof(tsSocketServer));
 
     memset(&sSocketEventQuene, 0, sizeof(tsSocketEventQuene));
-    sSocketEventQuene.flag_app =  T_FALSE;
-    sSocketEventQuene.flag_device =  T_FALSE;
+    sSocketEventQuene.flag_data  =  T_FALSE;
+    sSocketEventQuene.flag_space =  T_TRUE;
     pthread_mutex_init(&sSocketEventQuene.mutex, NULL);
-    pthread_cond_init(&sSocketEventQuene.cond_data_recv, NULL);
+    pthread_cond_init(&sSocketEventQuene.cond_data_available, NULL);
+    pthread_cond_init(&sSocketEventQuene.cond_space_available, NULL);
     
     memset(&sSocketClientHead, 0, sizeof(tsSocketClientHead));
     pthread_mutex_init(&sSocketClientHead.mutex, &attr);
@@ -214,6 +217,24 @@ static void SocketClientDestory(tsSocketClient *psSocketClient)
         close(psSocketClient->iSocketFd);
         //Remove The Devices detch This Socket, brocast the envet to device thread
         //TODO:
+        pthread_mutex_lock(&sSocketEventQuene.mutex);
+        GREEN_vPrintf(DBG_SOCK, "pthread_cond_waiting ...\n");
+        while(!sSocketEventQuene.flag_space)
+        {
+            pthread_cond_wait(&sSocketEventQuene.cond_space_available, &sSocketEventQuene.mutex);
+        }
+        memset(&sSocketEventQuene.sSocketClient, 0, sizeof(tsSocketClient));
+        memcpy(&sSocketEventQuene.sSocketClient, psSocketClient, sizeof(tsSocketClient));
+        sprintf(sSocketEventQuene.sSocketClient.csClientData, "%s", paSocketDisconnect);
+        sSocketEventQuene.flag_data = T_TRUE;
+        pthread_mutex_unlock(&sSocketEventQuene.mutex);
+        BLUE_vPrintf(DBG_SOCK, "pthread_cond_broadcast Message\n");
+        pthread_cond_broadcast(&sSocketEventQuene.cond_data_available); 
+
+
+
+
+
         free(psSocketClient);
     }
 }
@@ -223,56 +244,35 @@ static teSocketStatus SocketServerHandleRecvMessage(tsSocketClient *psSocketClie
     BLUE_vPrintf(DBG_SOCK, "SocketServerHandleRecvMessage\n");
 
     //Brodcast This Data to Other Thread
-    json_object *psJsonRecvMessage = NULL, *psJsonTemp = NULL;
-    if (NULL != (psJsonRecvMessage = json_tokener_parse(psSocketClient->csClientData)))
+    pthread_mutex_lock(&sSocketEventQuene.mutex);
+    GREEN_vPrintf(DBG_SOCK, "pthread_cond_waiting ...\n");
+    while(!sSocketEventQuene.flag_space)
     {
-        if(NULL != (psJsonTemp = json_object_object_get(psJsonRecvMessage, paKeyEventType)))
-        {
-            int iEventType = json_object_get_int(psJsonTemp);
-            switch(iEventType)
-            {
-                case (E_IOTC_EVENT_DEVICE):
-                {
-                    sSocketEventQuene.sSocketEvent.eSocketCondEvent = E_IOTC_EVENT_DEVICE;
-                    sSocketEventQuene.flag_device = T_TRUE;
-                }
-                break;
-                
-                case (E_IOTC_EVENT_APP):
-                {
-                    sSocketEventQuene.sSocketEvent.eSocketCondEvent = E_IOTC_EVENT_APP;
-                    sSocketEventQuene.flag_app = T_TRUE;
-                }
-                break;
-                
-                default:
-                    break;
-            }
-            json_object_put(psJsonRecvMessage);
-            
-            sSocketEventQuene.sSocketEvent.uCondData.sSocketData.iSocketFd = psSocketClient->iSocketFd;
-            sSocketEventQuene.sSocketEvent.uCondData.sSocketData.iSocketDataLen = psSocketClient->iSocketDataLen;
-            memcpy(sSocketEventQuene.sSocketEvent.uCondData.sSocketData.paSocketData, psSocketClient->csClientData, psSocketClient->iSocketDataLen);
-            
-            BLUE_vPrintf(DBG_SOCK, "pthread_cond_broadcast Message\n");
-
-            pthread_cond_broadcast(&sSocketEventQuene.cond_data_recv); 
-        }
-        else
-        {
-            ERR_vPrintf(T_TRUE, "Json Format Error\n");
-            json_object_put(psJsonRecvMessage);
-            return E_SOCK_ERROR_FORMAT;
-        }
+        pthread_cond_wait(&sSocketEventQuene.cond_space_available, &sSocketEventQuene.mutex);
     }
-    else
-    {
-        ERR_vPrintf(T_TRUE, "Json Format Error\n");
-        return E_SOCK_ERROR_FORMAT;
-    }
+    memset(&sSocketEventQuene.sSocketClient, 0, sizeof(tsSocketClient));
+    memcpy(&sSocketEventQuene.sSocketClient, psSocketClient, sizeof(tsSocketClient));
+    sSocketEventQuene.flag_data = T_TRUE;
+    pthread_mutex_unlock(&sSocketEventQuene.mutex);
+    BLUE_vPrintf(DBG_SOCK, "pthread_cond_broadcast Message\n");
+    pthread_cond_broadcast(&sSocketEventQuene.cond_data_available); 
 
     return E_SOCK_OK;
 }
+
+static void *SocketClientDataHandleThread(void *arg)
+{
+    BLUE_vPrintf(DBG_SOCK, "SocketClientDataHandleThread\n");
+
+    tsSocketClient *psSocketClientThread = (tsSocketClient*)arg;
+    
+    SocketServerHandleRecvMessage(psSocketClientThread);
+    free(psSocketClientThread);
+    
+    DBG_vPrintf(DBG_SOCK, "Exit SocketClientDataHandleThread\n");
+    pthread_exit("exit");
+}
+
 
 static void ThreadSignalHandler(int sig)
 {
@@ -398,7 +398,25 @@ static void *SocketServerHandleThread(void *arg)
                                 else    /*recv event*/
                                 {
                                     YELLOW_vPrintf(DBG_SOCK, "Recv Data is [%d]--- %s\n", psSocketClientTemp1->iSocketFd, psSocketClientTemp1->csClientData);
-                                    SocketServerHandleRecvMessage(psSocketClientTemp1);
+                                    //SocketServerHandleRecvMessage(psSocketClientTemp1);
+                                    //Start a new thread to handle data
+                                    BLUE_vPrintf(DBG_SOCK, "pthread_create\n");
+                                    
+                                    tsSocketClient *psSocketClientThread = (tsSocketClient*)malloc(sizeof(tsSocketClient));
+                                    if(NULL == psSocketClientThread)
+                                    {
+                                        goto done;
+                                    }
+                                    memcpy(psSocketClientThread, psSocketClientTemp1, sizeof(tsSocketClient));
+                                    pthread_t pthreadHandle;
+                                    pthread_attr_t attr;
+                                    pthread_attr_init(&attr);
+                                    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+                                    if(0 != pthread_create(&pthreadHandle, &attr, SocketClientDataHandleThread, psSocketClientThread))
+                                    {
+                                        ERR_vPrintf(T_TRUE,"pthread_create failed, %s\n", strerror(errno));  
+                                        goto done;
+                                    }
                                 }
                                 break;
                             }

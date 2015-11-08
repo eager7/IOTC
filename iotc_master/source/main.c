@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 
     signed char opt = 0;
     int option_index = 0;
-    int daemonize = 1;
+    int daemonize = 0;
     while ((opt = getopt_long(argc, argv, "s:hfv:B:I:P:m:nc:p:6:", long_options, &option_index)) != -1) 
     {
         switch (opt) 
@@ -113,7 +113,8 @@ int main(int argc, char *argv[])
         tsIotcDevice *psIotcDeviceTemp = NULL;
         dl_list_for_each(psIotcDeviceTemp, &sIotcDeviceHead.list, tsIotcDevice, list)
         {
-            DBG_vPrintf(DBG_MAIN, "The Device Index is 0x%016llx\n", psIotcDeviceTemp->u64DeviceIndex);
+            DBG_vPrintf(DBG_MAIN, "The Device Index is 0x%016llx, socket is %d\n", 
+                    psIotcDeviceTemp->u64DeviceIndex, psIotcDeviceTemp->iSocketClientFd);
         }
         pthread_mutex_unlock(&sIotcDeviceHead.mutex);
         

@@ -104,32 +104,16 @@ typedef struct _tsSocketClientList
     pthread_mutex_t                 mutex;
 }tsSocketClientHead;
 
-typedef struct _tsSocketData
-{
-    int     iSocketFd;
-    int     iSocketDataLen;
-    char    paSocketData[MXBF];
-}tsSocketData;
-
-typedef struct _tsSocketEvent
-{
-    teIotcEvnetType eSocketCondEvent;
-    union 
-    {
-        tsSocketData sSocketData;
-
-    }uCondData;
-    
-}tsSocketEvent;
-
 typedef struct _tsSocketEventQuene
 {
-    volatile sig_atomic_t           flag_app;
-    volatile sig_atomic_t           flag_device;
+    volatile sig_atomic_t           flag_data;
+    volatile sig_atomic_t           flag_space;
+    
     pthread_mutex_t                 mutex;
-    pthread_cond_t                  cond_data_recv;
+    pthread_cond_t                  cond_data_available;
+    pthread_cond_t                  cond_space_available;
 
-    tsSocketEvent                   sSocketEvent;
+    tsSocketClient                  sSocketClient;
 }tsSocketEventQuene;
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/

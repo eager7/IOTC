@@ -82,6 +82,7 @@ teIotcStatus IotcDeviceInit();
 teIotcStatus IotcDeviceFinished();
 teIotcStatus IotcDeviceAdd(char *paDeviceName, uint16 u16DeviceID, uint64 u64DeviceIndex, int iSocketClientFd);
 teIotcStatus IotcDeviceRemove(tsIotcDevice *psIotcDevice);
+teIotcStatus IotcDeviceRemoveSocket(int iSocketFd);
 
 
 
