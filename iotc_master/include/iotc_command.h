@@ -42,17 +42,43 @@ extern "C"{
 /****************************************************************************/
 typedef enum
 {
-    E_COMMAND_DEVICES_SEARCH                = 0x0001,
-    E_COMMAND_DEVICES_REPORT                = 0x0002,
-    E_COMMAND_SOCKET_DISCONNECT             = 0x0003,
-    E_COMMAND_SET_ONOFF                     = 0x0004,
+    E_COMMAND_DEVICES_JION                  = 0x3001,
+    E_COMMAND_DEVICES_LIST_REPORT           = 0x3002,
+    E_COMMAND_DEVICES_VERSION_RESPONSE      = 0x3003,
+    
+    E_COMMAND_DEVICES_ATTRIBUTE_REPORT      = 0x3004,
+
+    E_COMMAND_DEVICES_DEFAULT_RESPONSE      = 0x3005,
+    E_COMMAND_DEVICES_SEARCH_RESPONSE      = 0x3006,
+    E_COMMAND_DEVICES_LEAVE_REPORT      = 0x3007,
+    E_COMMAND_SOCKET_DISCONNECT = 0x3008,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
 }teIotcMessageType;
 
 typedef enum
 {
-    E_IOTC_EVENT_APP,
-    E_IOTC_EVENT_DEVICE,
-    E_IOTC_EVENT_EXIT,
+    E_IOTC_EVENT_APP                        = 0x0001,
+    E_IOTC_EVENT_DEVICE                     = 0x0002,
+    E_IOTC_EVENT_EXIT                       = 0x0003,
 }teIotcEvnetType;
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/

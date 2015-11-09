@@ -179,7 +179,7 @@ static teNetworkStatus IotcNetWorkHandleRecvMessage(int iSocketFd, json_object *
     
     switch(u16MessageType)
     {
-        case(E_COMMAND_DEVICES_REPORT):
+        case(E_COMMAND_DEVICES_LIST_REPORT):
         {
             IotcNetworkHandleDevicesReport(iSocketFd, psJsonMessage);
         }
