@@ -160,7 +160,13 @@ static void *tfIotcMulticastThread(void *arg)
         {
             ERR_vPrintf(T_TRUE, "Recvfrom Data Error!\n");
         }
-
+        BLUE_vPrintf(DBG_MUL, "Recv Data: %s\n", paRecvBuffer);
+        const char *paResponse = "This is Server";
+        if(sendto(sIotcMulticast.iSocketFd, paResponse, strlen(paResponse), 0, 
+                    (struct sockaddr*)&sIotcMulticast.server_addr, sizeof(sIotcMulticast.server_addr)) < 0)
+        {
+            ERR_vPrintf(T_TRUE, "Send Data Error!\n");
+        }
         
         sleep(0);
     }
