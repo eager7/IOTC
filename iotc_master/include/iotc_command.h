@@ -42,36 +42,28 @@ extern "C"{
 /****************************************************************************/
 typedef enum
 {
-    E_COMMAND_DEVICES_JION                  = 0x3001,
-    E_COMMAND_REPORT_DEVICES_LIST           = 0x3002,
-    E_COMMAND_RESPONSE_DEVICES_VERSION      = 0x3003,
+    E_COMMAND_DEVICES_JION                  = 0x1001,
+    E_COMMAND_DEFAULT_RESPONSE              = 0x8001,
+    E_COMMAND_REPORT_DEVICES_LIST           = 0x1002,
+
+    E_COMMAND_REQUEST_VIRSION               = 0x8003,
+    E_COMMAND_RESPONSE_VERSION              = 0x1003,
     
-    E_COMMAND_DEVICES_ATTRIBUTE_REPORT      = 0x3004,
+    E_COMMAND_REPORT_DEVICE_ATTRIBUTE       = 0x1004,
+    E_COMMAND_REPORT_DEVICE_LEAVE           = 0x1005,
 
-    E_COMMAND_DEVICES_DEFAULT_RESPONSE      = 0x3005,
-    E_COMMAND_DEVICES_SEARCH_RESPONSE      = 0x3006,
-    E_COMMAND_DEVICES_LEAVE_REPORT      = 0x3007,
-    E_COMMAND_SOCKET_DISCONNECT = 0x3008,
+    E_COMMAND_REQUEST_DEVICE_ATTRIBUTE      = 0x8006,
+    E_COMMAND_RESPONSE_DEVICE_ATTRIBUTE     = 0x1006,
 
+    E_COMMAND_REQUEST_DEVICES_SEARCH        = 0x8007,
+    E_COMMAND_RESPONSE_DEVICES_SEARCH       = 0x1007,
 
+    E_COMMAND_SET_DEVICE_ONOFF              = 0x8008,
+    E_COMMAND_SET_DEVICE_BRIGHTNESS         = 0x8009,
+    E_COMMAND_SET_DEVICE_COLOR              = 0x800A,
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-    
+    //internel command   
+    E_COMMAND_SOCKET_DISCONNECT = 0x3001,   
 }teIotcMessageType;
 
 typedef enum
@@ -91,14 +83,16 @@ typedef enum
 /****************************************************************************/
 /***        Local Variables                                               ***/
 /****************************************************************************/
-#define paKeySequenceNo     "sequence_no"
-#define paKeyEventType      "event_type"
-#define paKeyMessageType    "message_type"
-#define paKeyDescription    "description"
-#define paKeyDeviceName     "device_name"
-#define paKeyDeviceId       "device_id"
-#define paKeyDeviceIndex    "device_index"
-#define paKeyDeviceOnOff    "onoff"
+#define paKeySequenceNo         "sequence_no"
+#define paKeyEventType          "event_type"
+#define paKeyMessageType        "message_type"
+#define paKeyDescription        "description"
+#define paKeyDeviceName         "device_name"
+#define paKeyDeviceId           "device_id"
+#define paKeyDeviceIndex        "device_index"
+#define paKeyDeviceOnOff        "onoff"
+#define paKeyDeviceBrightness   "brightness"
+#define paKeyDeviceColor        "color"
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
