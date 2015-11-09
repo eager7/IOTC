@@ -27,8 +27,6 @@ extern "C"{
 /***        Include files                                                 ***/
 /****************************************************************************/
 #include <pthread.h>
-#include "utils.h"
-
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
@@ -61,7 +59,7 @@ typedef struct _Thread{
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
-eRetStatus Detached_thread_init(Thread *th);
+eRetStatus DetachedThreadInit(Thread *th);
 
 
 

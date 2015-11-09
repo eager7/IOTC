@@ -22,7 +22,7 @@
 #include <pthread.h>
 
 #include "utils.h"
-
+#include "pthread_utils.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
@@ -38,17 +38,17 @@
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
-eRetStatus Detached_thread_init(Thread *th)
+eRetStatus DetachedThreadInit(Thread *th)
 {
 	pthread_attr_t attr;
 
 	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&(th->id), PTHREAD_CREATE_DETACHED);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	th->flag = T_TRUE;
-	if(-1==pthread_create(&(th->id), &attr, th->proc, th->arg))
+	if(-1 == pthread_create(&(th->id), &attr, th->proc, th))
 	{
-		ERR_vPrintf("Creat detached pthread failed\n");
+		ERR_vPrintf(T_TRUE, "Creat detached pthread failed\n");
 		th->flag = T_FALSE;
 		pthread_attr_destroy(&attr);
 		return E_ERROR;

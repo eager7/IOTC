@@ -23,10 +23,9 @@ LIB_DIR :=
 SOURCE := $(wildcard $(SRC_DIR)/*.c)
 INCLUD := $(wildcard $(INC_DIR)/*.h)
 
-CFLAGS := -I./inc/
+#CFLAGS := -I./inc/
 CFLAGS += -I$(SRC_NAME)/inc/
 PROJ_DFLAGS := -D_REENTRANT
-PROJ_LIBS := -L$(LIB_DIR)
 PROJ_LIBS += -lpthread -ljson-c
 
 CC := gcc

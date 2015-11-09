@@ -53,8 +53,7 @@ extern "C"{
 #define CYAN_vPrintf(a,b,ARGS...)   do {  if (a) {printf(UI_CYAN     ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
 #define WHITE_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_WHITE    ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
 
-#define ERR_vPrintf(b,ARGS...) RED_vPrintf(T_TRUE,b,ARGS...)
-#define DEB_vPrintf(b,ARGS...) BLUE_vPrintf(T_TRUE,b,ARGS...)
+#define ERR_vPrintf RED_vPrintf
 
 #define MIBF 256
 #define MDBF 1024 

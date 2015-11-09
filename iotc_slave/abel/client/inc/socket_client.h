@@ -2,7 +2,7 @@
  *
  * MODULE:             socket_client.h
  *
- * COMPONENT:          Utils interface
+ * COMPONENT:          Utils of socket client
  *
  * REVISION:           $Revision:  0$
  *
@@ -27,11 +27,6 @@ extern "C"{
 /***        Include files                                                 ***/
 /****************************************************************************/
 #include <stdio.h>
-#include <pthread.h>
-#include "utils.h"
-#include <netinet/in.h>
-#include "list.h"
-#include "iotc_command.h"
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
