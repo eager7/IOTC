@@ -33,6 +33,7 @@
 #include "iotc_network.h"
 #include "iotc_devices.h"
 #include "iotc_application.h"
+#include "iotc_multicast.h"
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
@@ -103,7 +104,8 @@ int main(int argc, char *argv[])
 
     if ((SocketServerInit(PORT_SOCKET, NULL) != E_SOCK_OK) || 
         (IotcNetworkInit() != E_NETWORK_OK) || 
-        (IotcApplicationkInit() != E_APPLICATION_OK))
+        (IotcApplicationkInit() != E_APPLICATION_OK) || 
+        (IotcMulticastInit() != E_MULTI_OK))
     {
         ERR_vPrintf(T_TRUE, "Init compents failed \n");
         goto finish;

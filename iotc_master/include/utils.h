@@ -75,6 +75,13 @@ typedef enum
     T_TRUE  = 1,
 }bool_t;
 
+typedef volatile enum
+{
+    E_THREAD_STOPPED, 
+    E_THREAD_RUNNING,  
+    E_THREAD_STOPPING, 
+}teThreadState;  
+
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/

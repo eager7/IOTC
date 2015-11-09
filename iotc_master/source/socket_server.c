@@ -140,6 +140,7 @@ teSocketStatus SocketClientSendMessage(int iSocketFd, char *psMessage, int iMess
 static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress)
 {
     struct sockaddr_in server_addr;  
+    memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;  
     if(NULL != psNetAddress)
     {
@@ -167,12 +168,14 @@ static teSocketStatus SocketInitSocket(int iPort, char *psNetAddress)
     if(-1 == bind(sSocketServer.iSocketFd, (struct sockaddr*)&server_addr, sizeof(server_addr)))
     {
         ERR_vPrintf(T_TRUE,"bind socket failed, %s\n", strerror(errno));  
+        close(sSocketServer.iSocketFd);
         return E_SOCK_ERROR_BIND;
     }
 
     if(-1 == listen(sSocketServer.iSocketFd, SOCKET_LISTEN_NUM))
     {
         ERR_vPrintf(T_TRUE,"listen socket failed, %s\n", strerror(errno));  
+        close(sSocketServer.iSocketFd);
         return E_SOCK_ERROR_LISTEN;
     }
     return E_SOCK_OK;
