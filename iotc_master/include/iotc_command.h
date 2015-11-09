@@ -72,6 +72,19 @@ typedef enum
     E_IOTC_EVENT_DEVICE                     = 0x0002,
     E_IOTC_EVENT_EXIT                       = 0x0003,
 }teIotcEvnetType;
+
+typedef enum _teIotcDeviceType
+{
+    E_DEVICE_SWITCH_LIGHT                   = 0x0001,
+    E_DEVICE_DIMMER_LIGHT                   = 0x0002,
+    E_DEVICE_COLOR_LIGHT                    = 0x0003,
+
+    E_DEVICE_SMART_PLUG                     = 0x0004,
+    E_DEVICE_SENSOR_LIGHT                   = 0x0005,
+    E_DEVICE_SENSOR_TEMPHUMI                = 0x0006,
+    E_DEVICE_SENSOR_BINARY                  = 0x0007,
+}teIotcDeviceType;
+
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/

@@ -27,7 +27,7 @@ extern "C"{
 /***        Include files                                                 ***/
 /****************************************************************************/
 #include "utils.h"
-
+#include "iotc_command.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
@@ -59,18 +59,6 @@ typedef union
 
 typedef teAttStatus (*tprDeviceSetDeviceAttributeCallback)(int iSocketFd, uint64 u64DeviceIndex, uint8 u8Type, tuAttributeData uAttributeData, teAtttibuteType eAtttibuteType);
 typedef teAttStatus (*tprDeviceGetDeviceAttributeCallback)(int iSocketFd, uint64 u64DeviceIndex, uint8 u8Type, tuAttributeData *puAttributeData, teAtttibuteType eAtttibuteType);
-
-typedef enum _teIotcDeviceType
-{
-    E_DEVICE_SWITCH_LIGHT= 0x0001,
-    E_DEVICE_DIMMER_LIGHT= 0x0002,
-    E_DEVICE_COLOR_LIGHT= 0x0003,
-
-    E_DEVICE_SMART_PLUG= 0x0004,
-    E_DEVICE_SENSOR_LIGHT= 0x0005,
-    E_DEVICE_SENSOR_TEMPHUMI= 0x0006,
-    E_DEVICE_SENSOR_BINARY= 0x0007,
-}teIotcDeviceType;
 
 typedef struct _tsDeviceSwitchLight
 {
