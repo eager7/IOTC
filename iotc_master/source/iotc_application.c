@@ -45,7 +45,7 @@ static void *IotcApplicationHandleThread(void *arg);
 /***        Local Variables                                               ***/
 /****************************************************************************/
 static tsIotcApplication sIotcApplication;
-static const char *paThreadExit = "{\"sequence_no\": 1,\"message_type\": 4,\"event_type\":2,\"description\": \"\"}";
+static const char *paThreadExit = "{\"sequence_no\": 1,\"message_type\": 4,\"event_type\":3,\"description\": \"\"}";
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
