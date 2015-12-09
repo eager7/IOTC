@@ -164,7 +164,9 @@ static void *tfIotcBroadcastThread(void *arg)
                     (struct sockaddr*)&sIotcBroadcast.server_addr, sizeof(sIotcBroadcast.server_addr)) < 0)
         {
             ERR_vPrintf(T_TRUE, "Send Data Error!\n");
-        }
+        } else {
+        	BLUE_vPrintf(DBG_BROAD, "Send Data: %s\n", paResponse);
+	}
         
         sleep(0);
     }
