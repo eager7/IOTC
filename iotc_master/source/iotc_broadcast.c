@@ -142,7 +142,7 @@ static teBroadStatus IotcBroadcastSocketInit(int iPort, char *paNetAddress)
 
 static void *tfIotcBroadcastThread(void *arg)
 {
-    BLUE_vPrintf(DBG_BROAD, "tfIotcMulticastThread\n");
+    //BLUE_vPrintf(DBG_BROAD, "tfIotcMulticastThread, server addr %s\n", inet_ntop(sIotcBroadcast.server_addr));
     sIotcBroadcast.eThreadState = E_THREAD_RUNNING;
 
     int  iRecvLen = 0;
@@ -158,15 +158,16 @@ static void *tfIotcBroadcastThread(void *arg)
             usleep(5);
             continue;
         }
-        BLUE_vPrintf(DBG_BROAD, "Recv Data[%d]: %s\n", iRecvLen, paRecvBuffer);
+        struct sockaddr_in *p = (struct sockaddr_in*)&sIotcBroadcast.server_addr;
+        BLUE_vPrintf(DBG_BROAD, "Recv Data[%d]: %s, from %s\n", iRecvLen, paRecvBuffer, inet_ntoa(p->sin_addr));
         const char *paResponse = "This is Server";
         if(sendto(sIotcBroadcast.iSocketFd, paResponse, strlen(paResponse), 0, 
                     (struct sockaddr*)&sIotcBroadcast.server_addr, sizeof(sIotcBroadcast.server_addr)) < 0)
         {
             ERR_vPrintf(T_TRUE, "Send Data Error!\n");
         } else {
-        	BLUE_vPrintf(DBG_BROAD, "Send Data: %s\n", paResponse);
-	}
+            BLUE_vPrintf(DBG_BROAD, "Send Data: %s\n", paResponse);
+        }
         
         sleep(0);
     }
