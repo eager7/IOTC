@@ -65,6 +65,9 @@ extern "C"{
 #define MDBF 1024 
 #define MXBF 2048
 
+#define CheckError(value,comp,ret) do{if(value != comp){ERR_vPrintf(T_TRUE, "err:%s\n", strerror(errno));return ret;}}while(0)
+#define CheckNull(x,y) do{if(x == NULL){return y;}}while(0)
+
 /****************************************************************************/
 /***        Type Definitions                                              ***/
 /****************************************************************************/

@@ -38,24 +38,31 @@ extern "C"{
 typedef enum
 {
     E_SOCKET_OK,
-    E_SOCKET_ERROR_FAILED,
-    E_SOCKET_ERROR_TIMEOUT,
-    E_SOCKET_ERROR_NO_MEM,
     E_SOCKET_NULL,
+    E_SOCKET_INIT,
+    E_SOCKET_SEND,
+    E_SOCKET_RECV,
+    E_SOCKET_CLOSE,
+    E_SOCKET_ERROR,
+    E_SOCKET_TIMEOUT,
+    E_SOCKET_DISCONNECT,
+    E_SOCKET_NO_MEM,
 } temSocketStatus;
 
 typedef struct
 {
     int iSocketFd;
-    struct sockaddr_in sAddr;
+    int iDomain;
+    union {
+        struct sockaddr_in sAddr_Ipv4;
+        struct sockaddr_in6 sAddr_Ipv6;
+    }sAddr;
 } tsmSocket;
 //typedef void *(*tprThreadFunction)(void *psThreadInfoVoid);
 
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
-#define mSocketCheckError(x,y) do{if(x != E_SOCKET_OK){return y;}}while(0)
-#define mSocketCheckNull(x,y) do{if(x == NULL){return y;}}while(0)
 /****************************************************************************/
 /***        Local Function Prototypes                                     ***/
 /****************************************************************************/
@@ -77,6 +84,9 @@ typedef struct
 /****************************************************************************/
 
 temSocketStatus mSocketInit(tsmSocket *psmSocket, int iPort, char *paNetAddress, bool_t isServer);
+temSocketStatus mSocketFinished(tsmSocket *psmSocket);
+temSocketStatus mSocketRecv(tsmSocket *psmSocket, char *paRecvMsg, uint16 u16Length);
+temSocketStatus mSocketSend(tsmSocket *psmSocket, char *paSendMsg, uint16 u16Length);
 
 #if defined __cplusplus
 }
