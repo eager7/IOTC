@@ -1,51 +1,57 @@
 ###########################################################################
 #
-# MODULE:             iotc_net - Makefile
+# MODULE:             Iotc Net - Makefile
 #
 # REVISION:           $Revision: 1.0 $
 #
-# DATED:              $Date: 2015-10-20 11:16:28 +0000 $
+# DATED:              $Date: 2015-10-1 11:16:28 +0000 $
 #
 # AUTHOR:             PCT
 #
 ###########################################################################
 #
-# Copyright panchangtao@gmail.com B.V. 2015. All rights reserved
+# Copyright Tonly B.V. 2015. All rights reserved
 #
 ###########################################################################
+TARGET := iotc_net_daemon
 
-TARGET := iotc_net
+SRC_DIR := .
+SOURCE := $(wildcard $(SRC_DIR)/*.c)
 
-CC := gcc
-RM := rm
-
-SOURCE_DIR := .
-CFLAGS += -I./
-CFLAGS += -O2 -g -Wno-unused-but-set-variable -Wall
+CFLAGS := -I./include/
 PROJ_DFLAGS := -D_REENTRANT
-PROJ_LIB := -lpthread
+PROJ_LIBS := -L./lib
+PROJ_LIBS += -lpthread -ljson-c -lsqlite3
 
-SOURCE := $(wildcard $(SOURCE_DIR)/*.c)
-OBJECTS := $(patsubst %.c,%.o,$(SOURCE))
-OBJECTD := $(patsubst %.c,%.d,$(SOURCE))
+CC ?= gcc
+RM ?= -rm
+CFLAGS += -ggdb -Wno-unused-but-set-variable -Wall -O0 
 
-.PHONY: all clean
+OBJS := $(patsubst %.c,%.o,$(SOURCE))
 
+vpath %.c $(SRC_DIR)
+
+.PHONY: all clean distclean
 all: $(TARGET)
-
-$(TARGET):$(OBJECTS)
-	$(CC) $(PROJ_DFLAGS) $^ $(CFLAGS) $(PROJ_LIB) -o $@
 	
--include $(SOURCE:.c=.d)
+$(TARGET):$(OBJS)
+	@$(CC) $(PROJ_DFLAGS) $^ $(PROJ_CFLAGS) $(CFLAGS) $(PROJ_LIBS) -o $@ 
+	
+%.o:%.c
+	$(CC) $(PROJ_DFLAGS) -I. $(CFLAGS) -c $< -o $@
 
 %d:%c
 	@set -e;$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
 	sed 's/.o:/.o $@:/g' < $@.$$$$ > $@; \
-	$(RM) $@.$$$$
+	rm $@.$$$$
+-include $(SOURCE:.c=.d)
 
-%.o:%.c utils.h 
-	$(CC)  -I. $(CFLAGS) -c $< -o $@
+test:
+	@echo $(SOURCE)
+	@echo $(OBJS)
 	
 clean:
-	$(RM) $(TARGET) $(OBJECTS) *.d*
-	
+	$(RM) $(TARGET) $(OBJS) $(DEPS) *.d* 
+ 
+
+
