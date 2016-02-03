@@ -23,31 +23,60 @@
 extern "C"{
 #endif
 
+/****************************************************************************/
+/***        Include files                                                 ***/
+/****************************************************************************/
 #include "utils.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <signal.h>
 
+/****************************************************************************/
+/***        Type Definitions                                              ***/
+/****************************************************************************/
 typedef enum
 {
     E_SOCKET_OK,
     E_SOCKET_ERROR_FAILED,
     E_SOCKET_ERROR_TIMEOUT,
     E_SOCKET_ERROR_NO_MEM,
-} teSocketStatus;
+    E_SOCKET_NULL,
+} temSocketStatus;
 
 typedef struct
 {
-    volatile enum
-    {
-        E_THREAD_STOPPED,
-        E_THREAD_RUNNING,
-        E_THREAD_STOPPING,
-    } eState;
-    teThreadDetachState eThreadDetachState;
-    pthread_t pThread_Id;
-    void *pvThreadData;
-} tsThread;
+    int iSocketFd;
+    struct sockaddr_in sAddr;
+} tsmSocket;
+//typedef void *(*tprThreadFunction)(void *psThreadInfoVoid);
 
-typedef void *(*tprThreadFunction)(void *psThreadInfoVoid);
+/****************************************************************************/
+/***        Macro Definitions                                             ***/
+/****************************************************************************/
+#define mSocketCheckError(x,y) do{if(x != E_SOCKET_OK){return y;}}while(0)
+#define mSocketCheckNull(x,y) do{if(x == NULL){return y;}}while(0)
+/****************************************************************************/
+/***        Local Function Prototypes                                     ***/
+/****************************************************************************/
 
+/****************************************************************************/
+/***        Exported Variables                                            ***/
+/****************************************************************************/
+
+/****************************************************************************/
+/***        Local Variables                                               ***/
+/****************************************************************************/
+
+/****************************************************************************/
+/***        Exported Functions                                            ***/
+/****************************************************************************/
+
+/****************************************************************************/
+/***        Locate   Functions                                            ***/
+/****************************************************************************/
+
+temSocketStatus mSocketInit(tsmSocket *psmSocket, int iPort, char *paNetAddress, bool_t isServer);
 
 #if defined __cplusplus
 }

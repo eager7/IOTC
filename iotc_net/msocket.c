@@ -23,7 +23,7 @@
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
-
+#define DBG_SOCK 1
 /****************************************************************************/
 /***        Type Definitions                                              ***/
 /****************************************************************************/
@@ -43,11 +43,19 @@ extern uint8 verbosity;
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
-int mSocketInit(char *file)
+temSocketStatus mSocketInit(tsmSocket *psmSocket, int iPort, char *paNetAddress, bool_t isServer)
 {
-    BLUE_vPrintf(verbosity, "CcClientSocketInit\n");
+    DBG_vPrintf(DBG_SOCK, "mSocketInit\n");
 
-    return 0;
+    mSocketCheckNull(psmSocket, E_SOCKET_NULL);
+    mSocketCheckNull(paNetAddress, E_SOCKET_NULL);
+    signal(SIGPIPE, SIG_IGN);//ingnore signal interference
+    if(isServer){
+        
+    } else {
+
+    }
+    return E_SOCKET_OK;
 }
 
 

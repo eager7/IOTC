@@ -59,29 +59,29 @@ teThreadStatus mThreadStart(tprThreadFunction prThreadFunction, tsThread *psThre
     
     psThreadInfo->eState = E_THREAD_STOPPED;
     psThreadInfo->eThreadDetachState = eDetachState;
-	
-	static int iFirstTime = 1;
-	if (iFirstTime)
-	{
-		/* Set up sigmask to receive configured signal in the main thread. 
-		 * All created threads also get this signal mask, so all threads
-		 * get the signal. But we can use pthread_signal to direct it at one.
-		 */
-		struct sigaction sa;
-		sa.sa_handler = thread_signal_handler;
-		sa.sa_flags = 0;
-		sigemptyset(&sa.sa_mask);
 
-		if (sigaction(THREAD_SIGNAL, &sa, NULL) == -1) 
-		{
-			ERR_vPrintf(T_TRUE, "sigaction:%s\n", strerror(errno));
-		}
-		else
-		{
-			DBG_vPrintf(DBG_THREADS, "Signal action registered\n\r");
-			iFirstTime = 0;
-		}
-	}
+    static int iFirstTime = 1;
+    if (iFirstTime)
+    {
+        /* Set up sigmask to receive configured signal in the main thread. 
+        * All created threads also get this signal mask, so all threads
+        * get the signal. But we can use pthread_signal to direct it at one.
+        */
+        struct sigaction sa;
+        sa.sa_handler = thread_signal_handler;
+        sa.sa_flags = 0;
+        sigemptyset(&sa.sa_mask);
+
+        if (sigaction(THREAD_SIGNAL, &sa, NULL) == -1) 
+        {
+            ERR_vPrintf(T_TRUE, "sigaction:%s\n", strerror(errno));
+        }
+        else
+        {
+            DBG_vPrintf(DBG_THREADS, "Signal action registered\n\r");
+            iFirstTime = 0;
+        }
+    }
     
     if (pthread_create(&psThreadInfo->pThread_Id, NULL, prThreadFunction, psThreadInfo))
     {

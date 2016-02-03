@@ -19,10 +19,20 @@
 #ifndef __H_UTILS_H_
 #define __H_UTILS_H_
 
-#if defined __cplusplus   
-extern "C" {
+#if defined __cplusplus
+extern "C"{
 #endif
-
+/****************************************************************************/
+/***        Include files                                                 ***/
+/****************************************************************************/
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+/****************************************************************************/
+/***        Macro Definitions                                             ***/
+/****************************************************************************/
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +40,6 @@ extern "C" {
 #include <string.h>
 #include <malloc.h>
 #include <syslog.h>
-#include "zigbee_type.h"
 
 #define UI_BLACK(x)     "\e[30;1m"x"\e[0m"
 #define UI_RED(x)       "\e[31;1m"x"\e[0m"
@@ -52,12 +61,44 @@ extern "C" {
 #define ERR_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_RED	("[IOT_%s:%d]") b, __FILE__, __LINE__, ## ARGS);} \
     /*syslog(LOG_ERR,  "[IOT_%s:%d]" b, __FILE__, __LINE__, ## ARGS);*/} while(0)
 
-#define PACKED __attribute__((__packed__))
-#define MIBF    256
-#define MDBF    1024
-#define MABF    2048
+#define MIBF 256
+#define MDBF 1024 
+#define MXBF 2048
 
-//User Define
+/****************************************************************************/
+/***        Type Definitions                                              ***/
+/****************************************************************************/
+typedef unsigned char       uint8;
+typedef unsigned short      uint16; 
+typedef unsigned int        uint32;
+typedef unsigned long long  uint64;
+
+typedef enum
+{
+    T_FALSE = 0,
+    T_TRUE  = 1,
+}bool_t;
+
+/****************************************************************************/
+/***        Local Function Prototypes                                     ***/
+/****************************************************************************/
+
+/****************************************************************************/
+/***        Exported Variables                                            ***/
+/****************************************************************************/
+
+/****************************************************************************/
+/***        Local Variables                                               ***/
+/****************************************************************************/
+
+/****************************************************************************/
+/***        Exported Functions                                            ***/
+/****************************************************************************/
+
+/****************************************************************************/
+/***        Locate   Functions                                            ***/
+/****************************************************************************/
+
 
 #if defined __cplusplus
 }

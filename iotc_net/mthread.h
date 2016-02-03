@@ -22,9 +22,16 @@
 #if defined __cplusplus
 extern "C"{
 #endif
-
+/****************************************************************************/
+/***        Include files                                                 ***/
+/****************************************************************************/
 #include "utils.h"
-
+/****************************************************************************/
+/***        Macro Definitions                                             ***/
+/****************************************************************************/
+/****************************************************************************/
+/***        Type Definitions                                              ***/
+/****************************************************************************/
 typedef enum
 {
     E_THREAD_OK,
@@ -53,7 +60,9 @@ typedef struct
 } tsThread;
 
 typedef void *(*tprThreadFunction)(void *psThreadInfoVoid);
-
+/****************************************************************************/
+/***        Exported Functions                                            ***/
+/****************************************************************************/
 teThreadStatus mThreadStart(tprThreadFunction prThreadFunction, tsThread *psThreadInfo, teThreadDetachState eDetachState);
 teThreadStatus mThreadStop(tsThread *psThreadInfo);
 teThreadStatus mThreadFinish(tsThread *psThreadInfo);
