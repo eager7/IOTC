@@ -1,0 +1,82 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BLACK_vPrintf	iotc_CcSocket.h	43;"	d
+BLACK_vPrintf	utils.h	43;"	d
+BLUE_vPrintf	iotc_CcSocket.h	47;"	d
+BLUE_vPrintf	utils.h	47;"	d
+CC	Makefile	/^CC := gcc$/;"	m
+CYAN_vPrintf	iotc_CcSocket.h	49;"	d
+CYAN_vPrintf	utils.h	49;"	d
+DBG_vPrintf	iotc_CcSocket.h	42;"	d
+DBG_vPrintf	utils.h	42;"	d
+ERR_vPrintf	iotc_CcSocket.h	52;"	d
+ERR_vPrintf	utils.h	52;"	d
+GREEN_vPrintf	iotc_CcSocket.h	45;"	d
+GREEN_vPrintf	utils.h	45;"	d
+MDBF	iotc_CcSocket.h	57;"	d
+MDBF	utils.h	57;"	d
+MIBF	iotc_CcSocket.h	56;"	d
+MIBF	utils.h	56;"	d
+MXBF	iotc_CcSocket.h	58;"	d
+MXBF	utils.h	58;"	d
+OBJECTD	Makefile	/^OBJECTD := $(patsubst %.c,%.d,$(SOURCE))$/;"	m
+OBJECTS	Makefile	/^OBJECTS := $(patsubst %.c,%.o,$(SOURCE))$/;"	m
+PROJ_DFLAGS	Makefile	/^PROJ_DFLAGS := -D_REENTRANT$/;"	m
+PROJ_LIB	Makefile	/^PROJ_LIB := -lpthread$/;"	m
+PURPLE_vPrintf	iotc_CcSocket.h	48;"	d
+PURPLE_vPrintf	utils.h	48;"	d
+RED_vPrintf	iotc_CcSocket.h	44;"	d
+RED_vPrintf	utils.h	44;"	d
+RM	Makefile	/^RM := rm$/;"	m
+SOURCE	Makefile	/^SOURCE := $(wildcard $(SOURCE_DIR)\/*.c)$/;"	m
+SOURCE_DIR	Makefile	/^SOURCE_DIR := .$/;"	m
+TARGET	Makefile	/^TARGET := iotc_net$/;"	m
+T_FALSE	iotc_CcSocket.h	/^    T_FALSE = 0,$/;"	e	enum:__anon2
+T_FALSE	utils.h	/^    T_FALSE = 0,$/;"	e	enum:__anon1
+T_TRUE	iotc_CcSocket.h	/^    T_TRUE  = 1,$/;"	e	enum:__anon2
+T_TRUE	utils.h	/^    T_TRUE  = 1,$/;"	e	enum:__anon1
+UI_BLACK	iotc_CcSocket.h	33;"	d
+UI_BLACK	utils.h	33;"	d
+UI_BLUE	iotc_CcSocket.h	37;"	d
+UI_BLUE	utils.h	37;"	d
+UI_CYAN	iotc_CcSocket.h	39;"	d
+UI_CYAN	utils.h	39;"	d
+UI_GREEN	iotc_CcSocket.h	35;"	d
+UI_GREEN	utils.h	35;"	d
+UI_PURPLE	iotc_CcSocket.h	38;"	d
+UI_PURPLE	utils.h	38;"	d
+UI_RED	iotc_CcSocket.h	34;"	d
+UI_RED	utils.h	34;"	d
+UI_WHITE	iotc_CcSocket.h	40;"	d
+UI_WHITE	utils.h	40;"	d
+UI_YELLOW	iotc_CcSocket.h	36;"	d
+UI_YELLOW	utils.h	36;"	d
+Version	iotc_net.c	/^char const *Version = "v0.1";$/;"	v
+WHITE_vPrintf	iotc_CcSocket.h	50;"	d
+WHITE_vPrintf	utils.h	50;"	d
+YELLOW_vPrintf	iotc_CcSocket.h	46;"	d
+YELLOW_vPrintf	utils.h	46;"	d
+__H_UTILS_H_	iotc_CcSocket.h	21;"	d
+__H_UTILS_H_	utils.h	21;"	d
+bool_t	iotc_CcSocket.h	/^}bool_t;$/;"	t	typeref:enum:__anon2
+bool_t	utils.h	/^}bool_t;$/;"	t	typeref:enum:__anon1
+checkError	iotc_CcSocket.h	54;"	d
+checkError	utils.h	54;"	d
+daemonize_init	iotc_net.c	/^static void daemonize_init(const char *cmd)$/;"	f	file:
+iotc_net_init	iotc_net.c	/^static void iotc_net_init(int argc, char *argv[])$/;"	f	file:
+main	iotc_net.c	/^int main(int argc, char *argv[])$/;"	f
+print_net_usage_exit	iotc_net.c	/^static void print_net_usage_exit(char *argv[])$/;"	f	file:
+uint16	iotc_CcSocket.h	/^typedef unsigned short      uint16; $/;"	t
+uint16	utils.h	/^typedef unsigned short      uint16; $/;"	t
+uint32	iotc_CcSocket.h	/^typedef unsigned int        uint32;$/;"	t
+uint32	utils.h	/^typedef unsigned int        uint32;$/;"	t
+uint64	iotc_CcSocket.h	/^typedef unsigned long long  uint64;$/;"	t
+uint64	utils.h	/^typedef unsigned long long  uint64;$/;"	t
+uint8	iotc_CcSocket.h	/^typedef unsigned char       uint8;$/;"	t
+uint8	utils.h	/^typedef unsigned char       uint8;$/;"	t
+vQuitSignalHandler	iotc_net.c	/^static void vQuitSignalHandler (int sig)$/;"	f	file:
+verbosity	iotc_net.c	/^uint8 verbosity = 0;$/;"	v

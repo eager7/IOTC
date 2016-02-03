@@ -1,25 +1,25 @@
 /****************************************************************************
  *
- * MODULE:             iotc_CcSocket.h
+ * MODULE:             msocket.c
  *
- * COMPONENT:          connect with cc interface
+ * COMPONENT:          socket interface
  *
  * REVISION:           $Revision:  0$
  *
- * DATED:              $Date: 2015-12-12 15:13:17 +0100 (Thu, 21 Oct 2015 $
+ * DATED:              $Date: 2016-01-04 17:04:13 $
  *
  * AUTHOR:             PCT
  *
  ****************************************************************************
  *
- * Copyright panchangtao@gmail.com B.V. 2015. All rights reserved
+ * Copyright panchangtao@gmail.com 2016. All rights reserved
  *
  ***************************************************************************/
 
 /****************************************************************************/
 /***        Include files                                                 ***/
 /****************************************************************************/
-#include "iotc_CcSocket.h"
+#include "msocket.h"
 /****************************************************************************/
 /***        Macro Definitions                                             ***/
 /****************************************************************************/
@@ -43,10 +43,11 @@ extern uint8 verbosity;
 /****************************************************************************/
 /***        Exported Functions                                            ***/
 /****************************************************************************/
-int CcClientSocketInit(char *file)
+int mSocketInit(char *file)
 {
     BLUE_vPrintf(verbosity, "CcClientSocketInit\n");
 
     return 0;
 }
+
 

@@ -1,35 +1,37 @@
 /****************************************************************************
  *
- * MODULE:             utils.h
+ * MODULE:             Zigbee - JIP daemon
  *
  * COMPONENT:          Utils interface
  *
- * REVISION:           $Revision:  0$
+ * REVISION:           $Revision: 43420 $
  *
- * DATED:              $Date: 2015-10-21 15:13:17 +0100 (Thu, 21 Oct 2015 $
+ * DATED:              $Date: 2015-10-01 15:13:17 +0100 (Mon, 18 Jun 2012) $
  *
  * AUTHOR:             PCT
  *
  ****************************************************************************
  *
- * Copyright panchangtao@gmail.com B.V. 2015. All rights reserved
+ * Copyright Tonly B.V. 2015. All rights reserved
  *
  ***************************************************************************/
-
 
 #ifndef __H_UTILS_H_
 #define __H_UTILS_H_
 
-#if defined __cplusplus
-extern "C"{
+#if defined __cplusplus   
+extern "C" {
 #endif
-/****************************************************************************/
-/***        Include files                                                 ***/
-/****************************************************************************/
+
+#include <unistd.h>
 #include <stdio.h>
-/****************************************************************************/
-/***        Macro Definitions                                             ***/
-/****************************************************************************/
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <malloc.h>
+#include <syslog.h>
+#include "zigbee_type.h"
+
 #define UI_BLACK(x)     "\e[30;1m"x"\e[0m"
 #define UI_RED(x)       "\e[31;1m"x"\e[0m"
 #define UI_GREEN(x)     "\e[32;1m"x"\e[0m"
@@ -39,56 +41,26 @@ extern "C"{
 #define UI_CYAN(x)      "\e[36;1m"x"\e[0m"
 #define UI_WHITE(x)     "\e[37;1m"x"\e[0m"
 
-#define DBG_vPrintf(a,b,ARGS...)    do {  if (a) printf(b, ## ARGS);} while(0)
-#define BLACK_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_BLACK    ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define RED_vPrintf(a,b,ARGS...)    do {  if (a) {printf(UI_RED      ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define GREEN_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_GREEN    ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define YELLOW_vPrintf(a,b,ARGS...) do {  if (a) {printf(UI_YELLOW   ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define BLUE_vPrintf(a,b,ARGS...)   do {  if (a) {printf(UI_BLUE     ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define PURPLE_vPrintf(a,b,ARGS...) do {  if (a) {printf(UI_PURPLE   ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define CYAN_vPrintf(a,b,ARGS...)   do {  if (a) {printf(UI_CYAN     ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
-#define WHITE_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_WHITE    ("[PCT_%d]") b, __LINE__, ## ARGS);} } while(0)
+#define DBG_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_BLUE	("[IOT_%d]") b, __LINE__, ## ARGS);} \
+    /*else {syslog(LOG_DEBUG, "[IOT_%d]" b, __LINE__, ## ARGS);}*/} while(0)
+#define INF_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_YELLOW("[IOT_%d]") b, __LINE__, ## ARGS);} \
+    /*else {syslog(LOG_INFO,  "[IOT_%d]" b, __LINE__, ## ARGS);}*/} while(0)
+#define NOT_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_GREEN	("[IOT_%d]") b, __LINE__, ## ARGS);} \
+    /*else {syslog(LOG_NOTICE,"[IOT_%d]" b, __LINE__, ## ARGS);}*/} while(0)
+#define WAR_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_PURPLE("[IOT_%d]") b, __LINE__, ## ARGS);} \
+    /*else {syslog(LOG_WARNING, "[IOT_%d]" b, __LINE__, ## ARGS);}*/} while(0)
+#define ERR_vPrintf(a,b,ARGS...)  do {  if (a) {printf(UI_RED	("[IOT_%s:%d]") b, __FILE__, __LINE__, ## ARGS);} \
+    /*syslog(LOG_ERR,  "[IOT_%s:%d]" b, __FILE__, __LINE__, ## ARGS);*/} while(0)
 
-#define ERR_vPrintf RED_vPrintf
+#define PACKED __attribute__((__packed__))
+#define MIBF    256
+#define MDBF    1024
+#define MABF    2048
 
-#define checkError(ret) do{if(-1==ret){ERR_vPrintf(1,"[%d]err:%s\n", __LINE__, strerror(errno));return -1;}}while(0)
-#define checkNull(p) do{if(p==NULL){ERR_vPrintf(1,"[%d]err:null pointer\n", __LINE__);return -1;}}while(0)
-
-#define MIBF 256
-#define MDBF 1024 
-#define MXBF 2048
-
-/****************************************************************************/
-/***        Type Definitions                                              ***/
-/****************************************************************************/
-typedef unsigned char       uint8;
-typedef unsigned short      uint16; 
-typedef unsigned int        uint32;
-typedef unsigned long long  uint64;
-
-typedef enum
-{
-    T_FALSE = 0,
-    T_TRUE  = 1,
-}bool_t;
-
-/****************************************************************************/
-/***        Local Function Prototypes                                     ***/
-/****************************************************************************/
-
-/****************************************************************************/
-/***        Exported Variables                                            ***/
-/****************************************************************************/
-
-/****************************************************************************/
-/***        Local Variables                                               ***/
-/****************************************************************************/
-
-/****************************************************************************/
-/***        Exported Functions                                            ***/
-/****************************************************************************/
+//User Define
 
 #if defined __cplusplus
 }
 #endif
-#endif
+
+#endif /*__H_UTILS_H_*/
